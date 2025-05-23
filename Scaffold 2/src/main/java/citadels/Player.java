@@ -33,11 +33,16 @@ public class Player {
     }
 
     public void buildDistrict(DistrictCard newCard){
-        if(hand.contains(newCard) == true && this.gold >= Card.getCost()){
-            spendGold(Card.getCost());
-            
+        if(hand.contains(newCard) == true && this.gold >= newCard.getCost()){
+            spendGold(newCard.getCost());
+            hand.remove(newCard);
+            builtDistricts.add(newCard);
         }
     }
+
+    //public boolean hasBuilt(String name){
+        
+    //}
 
     public String getName(){
         return this.name;
