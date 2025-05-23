@@ -40,9 +40,14 @@ public class Player {
         }
     }
 
-    //public boolean hasBuilt(String name){
-        
-    //}
+    public boolean hasBuilt(String name){
+        for (DistrictCard card : builtDistricts) {
+        if (card.getName().equals(name)) {
+            return true;
+        }
+    }
+    return false;
+    }
 
     public String getName(){
         return this.name;

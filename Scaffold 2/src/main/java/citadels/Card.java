@@ -1,15 +1,13 @@
 package citadels;
 
-public class Card {
-    public String name;
-    public int cost;
+public abstract class Card {
+    private final String name;
 
-    public Card(String name, int cost){
+    public Card(String name) {
         this.name = name;
-        this.cost = cost;
     }
 
-    public int getCost(){
-        return this.cost;
+    public String getName() {
+        return name;
     }
 }
