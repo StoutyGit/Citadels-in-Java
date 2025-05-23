@@ -49,6 +49,10 @@ public class Player {
     return false;
     }
 
+    public void assignCharacter(CharacterCard character) {
+    this.character = character;
+}
+
     public String getName(){
         return this.name;
     }

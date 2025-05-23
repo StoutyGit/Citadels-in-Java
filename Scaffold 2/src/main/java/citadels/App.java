@@ -27,13 +27,15 @@ public class App {
             deck.loadFromFile(cardsFile);
             initializeCharacters();
             setupPlayers();
-            assignCrown();
-            dealStartingCards();
             System.out.println("Shuffling deck...");
             System.out.println("Adding characters...");
             System.out.println("Dealing cards...");
             System.out.println("Starting Citadels with " + players.size() + " players...");
             System.out.println("You are player 1");
+            assignCrown();
+            dealStartingCards();
+            System.out.println("Press t to process turns");
+            
             while(gameOver == false){
                 gameLoop();
             }
@@ -43,7 +45,87 @@ public class App {
         }
     }
 
-     private void initializeCharacters() {
+    private void gameLoop() {
+        System.out.println("================================");
+        System.out.println("SELECTION PHASE");
+        System.out.println("================================");
+        pressedT();
+        List<CharacterCard> selectionDeck = new ArrayList<>(characterDeck);
+        Collections.shuffle(selectionDeck);
+
+        CharacterCard hiddenCard = selectionDeck.remove(0);
+        System.out.println("A mystery character was removed.");
+
+        int faceUpCount = 0;
+        if (players.size() == 4) {
+            faceUpCount = 2;
+        } else if (players.size() == 5) {
+            faceUpCount = 1;
+        }
+
+        for (int i = 0; i < faceUpCount; i++) {
+            CharacterCard removed = selectionDeck.remove(0);
+            if (removed.getName().equals("King")) {
+                System.out.println("King was removed. The King cannot be visibly removed, trying again..");
+                selectionDeck.add(removed);
+                Collections.shuffle(selectionDeck);
+                i--;
+            } else {
+                System.out.println(removed.getName() + " was removed.");
+            }
+        }
+
+        for (int i = 0; i < players.size(); i++) {
+            Player player = players.get((crownedPlayerIndex + i) % players.size());
+            CharacterCard chosen = selectionDeck.remove(0);
+            player.assignCharacter(chosen);
+            System.out.println(player.getName() + " chose a character.");
+        }
+
+        turnPhase();
+    }
+
+    private void turnPhase() {
+        System.out.println("");
+        System.out.println("================================");
+        System.out.println("TURN PHASE");
+        System.out.println("================================");
+        for (int i = 1; i <= 8; i++) {
+            for (Player player : players) {
+                if (player.getCharacter() != null && player.getCharacter().getTurnOrder() == i) {
+                    System.out.println(i + ": " + player.getCharacter().getName());
+                    if (players.indexOf(player) == 0) {
+                        System.out.println("Your turn.");
+                        playerTurn(player);
+                    } else {
+                        System.out.println(player.getName() + " is the " + player.getCharacter().getName());
+                        // TODO: computer player logic
+                    }
+                }
+            }
+        }
+    }
+
+    private void playerTurn(Player player) {
+        System.out.println("Collect 2 gold or draw two cards and pick one [gold/cards]:");
+        String inputChoice = input.nextLine().trim().toLowerCase();
+        if (inputChoice.equals("gold")) {
+            player.addGold(2);
+            System.out.println("You received 2 gold.");
+        } else if (inputChoice.equals("cards")) {
+            DistrictCard card1 = deck.draw();
+            DistrictCard card2 = deck.draw();
+            System.out.println("Choose a card to keep: [1] " + card1.getName() + " or [2] " + card2.getName());
+            String choice = input.nextLine().trim();
+            if (choice.equals("1")) {
+                player.drawCard(card1);
+            } else {
+                player.drawCard(card2);
+            }
+        }
+    }
+
+    private void initializeCharacters() {
         characterDeck.add(new CharacterCard("Assassin", 1, "Kill a character"));
         characterDeck.add(new CharacterCard("Thief", 2, "Steal gold from a character"));
         characterDeck.add(new CharacterCard("Magician", 3, "Swap hand or redraw"));
@@ -87,47 +169,6 @@ public class App {
         for (Player player : players) {
             for (int i = 0; i < 4; i++) {
                 player.drawCard(deck.draw());
-            }
-        }
-    }
-
-    private void gameLoop() {
-        System.out.println("Welcome to Citadels! Type 'help' to see available commands.");
-        while (true) {
-            System.out.print("> ");
-            String line = input.nextLine().trim();
-            if (line.isEmpty()) continue;
-
-            String[] tokens = line.split(" ");
-            String command = tokens[0].toLowerCase();
-            String[] args = Arrays.copyOfRange(tokens, 1, tokens.length);
-
-            switch (command) {
-                case "hand":
-                    showHand();
-                    break;
-                case "gold":
-                    showGold(args);
-                    break;
-                case "build":
-                    buildDistrict(args);
-                    break;
-                case "citadel":
-                case "list":
-                case "city":
-                    showCity(args);
-                    break;
-                case "all":
-                    showAll();
-                    break;
-                case "end":
-                    System.out.println("You ended your turn.");
-                    crownedPlayerIndex = (crownedPlayerIndex + 1) % players.size();
-                    break;
-                case "help":
-                default:
-                    showHelp();
-                    break;
             }
         }
     }
@@ -232,9 +273,51 @@ public class App {
         System.out.println("end : Ends your turn");
     }
 
+    private void pressedT() {
+        while (true) {
+            String uInput = input.nextLine().trim();
+            if(uInput.toLowerCase().equals("t")){
+                return;
+            }
+            else{
+                System.out.println("It is not your turn. Press t to continue.");
+            } 
+            
+        }
+    }
 
     public static void main(String[] args) {
         App app = new App();
     }
 
 }
+
+
+
+// switch (command) {
+            //     case "hand":
+            //         showHand();
+            //         break;
+            //     case "gold":
+            //         showGold(args);
+            //         break;
+            //     case "build":
+            //         buildDistrict(args);
+            //         break;
+            //     case "citadel":
+            //     case "list":
+            //     case "city":
+            //         showCity(args);
+            //         break;
+            //     case "all":
+            //         showAll();
+            //         break;
+            //     case "end":
+            //         System.out.println("You ended your turn.");
+            //         crownedPlayerIndex = (crownedPlayerIndex + 1) % players.size();
+            //         break;
+            //     case "help":
+            //     default:
+            //         showHelp();
+            //         break;
+            // }
