@@ -6,12 +6,18 @@ import java.nio.charset.StandardCharsets;
 import java.io.*;
 import java.util.*;
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 public class App {
 	
 	private File cardsFile;
     private Deck deck;
+    private List<CharacterCard> characterDeck = new ArrayList<>();
     private List<Player> players = new ArrayList<>();
-    private int currentPlayerIndex = 0;
+    private int crownedPlayerIndex;
+    private boolean gameOver = false;
+
     private Scanner input = new Scanner(System.in);
 
 	public App() {
@@ -19,15 +25,33 @@ public class App {
             cardsFile = new File(URLDecoder.decode(this.getClass().getResource("cards.tsv").getPath(), StandardCharsets.UTF_8.name()));
              deck = new Deck();
             deck.loadFromFile(cardsFile);
+            initializeCharacters();
             setupPlayers();
+            assignCrown();
+            dealStartingCards();
             System.out.println("Shuffling deck...");
             System.out.println("Adding characters...");
-            System.out.println("Dealing cards...")
-            dealStartingCards();
-            gameLoop();
+            System.out.println("Dealing cards...");
+            System.out.println("Starting Citadels with " + players.size() + " players...");
+            System.out.println("You are player 1");
+            while(gameOver == false){
+                gameLoop();
+            }
+            
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+     private void initializeCharacters() {
+        characterDeck.add(new CharacterCard("Assassin", 1, "Kill a character"));
+        characterDeck.add(new CharacterCard("Thief", 2, "Steal gold from a character"));
+        characterDeck.add(new CharacterCard("Magician", 3, "Swap hand or redraw"));
+        characterDeck.add(new CharacterCard("King", 4, "Gain gold for yellow, get crown"));
+        characterDeck.add(new CharacterCard("Bishop", 5, "Gain gold for blue, buildings immune to Warlord"));
+        characterDeck.add(new CharacterCard("Merchant", 6, "Gain gold for green, +1 gold"));
+        characterDeck.add(new CharacterCard("Architect", 7, "Draw 2 extra cards, build up to 3"));
+        characterDeck.add(new CharacterCard("Warlord", 8, "Gain gold for red, destroy buildings"));
     }
 
     private void setupPlayers() {
@@ -54,10 +78,14 @@ public class App {
             players.add(new Player("Player " + i));
         }
     }
+    private void assignCrown() {
+        crownedPlayerIndex = new Random().nextInt(players.size());
+        System.out.println(players.get(crownedPlayerIndex).getName() + " is the crowned player and goes first.");
+    }
 
     private void dealStartingCards() {
         for (Player player : players) {
-            for (int i = 0; i < 4 && !deck.isEmpty(); i++) {
+            for (int i = 0; i < 4; i++) {
                 player.drawCard(deck.draw());
             }
         }
@@ -94,7 +122,7 @@ public class App {
                     break;
                 case "end":
                     System.out.println("You ended your turn.");
-                    currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
+                    crownedPlayerIndex = (crownedPlayerIndex + 1) % players.size();
                     break;
                 case "help":
                 default:
@@ -105,7 +133,7 @@ public class App {
     }
 
     private void showHand() {
-        Player player = players.get(currentPlayerIndex);
+        Player player = players.get(crownedPlayerIndex);
         System.out.println("Your hand:");
         List<DistrictCard> hand = player.getHand();
         for (int i = 0; i < hand.size(); i++) {
@@ -126,13 +154,13 @@ public class App {
                 return;
             }
         } else {
-            player = players.get(currentPlayerIndex);
+            player = players.get(crownedPlayerIndex);
         }
         System.out.println(player.getName() + " has " + player.getGold() + " gold.");
     }
 
     private void buildDistrict(String[] args) {
-        Player player = players.get(currentPlayerIndex);
+        Player player = players.get(crownedPlayerIndex);
         if (args.length < 1) {
             System.out.println("Usage: build <card index>");
             return;
@@ -174,7 +202,7 @@ public class App {
                 return;
             }
         } else {
-            player = players.get(currentPlayerIndex);
+            player = players.get(crownedPlayerIndex);
         }
 
         System.out.println(player.getName() + "'s city:");

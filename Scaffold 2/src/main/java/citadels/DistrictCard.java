@@ -1,5 +1,7 @@
 package citadels;
 
+import org.json.simple.JSONObject;
+
 public class DistrictCard extends Card {
     private final String color;
     private final int cost;
@@ -23,5 +25,6 @@ public class DistrictCard extends Card {
     public String getDescription() {
         return this.description;
     }
+
 
 }
