@@ -49,6 +49,7 @@ public class App {
         System.out.println("================================");
         System.out.println("SELECTION PHASE");
         System.out.println("================================");
+        System.out.print("> ");
         pressedT();
         List<CharacterCard> selectionDeck = new ArrayList<>(characterDeck);
         Collections.shuffle(selectionDeck);
@@ -107,56 +108,55 @@ public class App {
     }
 
     private void playerTurn(Player player) {
-        System.out.println("Collect 2 gold or draw two cards and pick one [gold/cards]:");
-        String inputChoice = input.nextLine().trim().toLowerCase();
+    System.out.println("Collect 2 gold or draw two cards and pick one [gold/cards]:");
+    String inputChoice = "";
+
+    while (true) {
+        System.out.print("> ");
+        inputChoice = input.nextLine().trim().toLowerCase();
         if (inputChoice.equals("gold")) {
             player.addGold(2);
             System.out.println("You received 2 gold.");
+            break;
         } else if (inputChoice.equals("cards")) {
             DistrictCard card1 = deck.draw();
             DistrictCard card2 = deck.draw();
             System.out.println("Choose a card to keep: [1] " + card1.getName() + " or [2] " + card2.getName());
-            String choice = input.nextLine().trim();
-            if (choice.equals("1")) {
-                player.drawCard(card1);
-            } else {
-                player.drawCard(card2);
+
+            String choice = "";
+            while (true) {
+                choice = input.nextLine().trim();
+                if (choice.equals("1")) {
+                    player.drawCard(card1);
+                    break;
+                } else if (choice.equals("2")) {
+                    player.drawCard(card2);
+                    break;
+                } else {
+                    System.out.println("Invalid input. Please type 1 or 2 to choose a card.");
+                }
             }
-        }
-        while(true){
-        String[] command = input.nextLine().trim().toLowerCase().split(" ");
-        if(command.length == 0){
-            continue;
-        }
-        switch (command[0]) {
-                case "hand":
-                    showHand();
-                    break;
-                case "gold":
-                    showGold(command[1]);
-                    break;
-                case "build":
-                    buildDistrict(command[1]);
-                    break;
-                case "citadel":
-                case "list":
-                case "city":
-                    showCity(command[1]);
-                    break;
-                case "all":
-                    showAll();
-                    break;
-                case "end":
-                    System.out.println("You ended your turn.");
-                    crownedPlayerIndex = (crownedPlayerIndex + 1) % players.size();
-                    return;
-                case "help":
-                default:
-                    showHelp();
-                    break;
-            }
+
+            break;
+        } else {
+            System.out.println("Invalid choice. Please type [gold/cards]:");
         }
     }
+
+    UserCommands commandProcessor = new UserCommands(deck);
+
+    while (true) {
+        System.out.print("> ");
+        String[] command = input.nextLine().trim().toLowerCase().split(" ");
+        if (command.length > 0 && command[0].equals("end")) {
+            System.out.println("You ended your turn.");
+            crownedPlayerIndex = (crownedPlayerIndex + 1) % players.size();
+            return;
+        }
+
+        commandProcessor.process(player, command, players);
+    }
+}
 
     private void initializeCharacters() {
         characterDeck.add(new CharacterCard("Assassin", 1, "Kill a character"));
@@ -206,16 +206,15 @@ public class App {
         }
     }
 
-    private void showHand() {
-        Player player = players.get(crownedPlayerIndex);
-        System.out.println("Your hand:");
-        List<DistrictCard> hand = player.getHand();
-        for (int i = 0; i < hand.size(); i++) {
-            DistrictCard card = hand.get(i);
-            System.out.println("[" + i + "] " + "'" + card.getName() + "'" + " [" + card.getColor() + "] " + "[" + card.getCost() + "]");
-        }
-        System.out.println("Gold: " + player.getGold());
+    private void showHand(Player player) {
+    System.out.println("Your hand:");
+    List<DistrictCard> hand = player.getHand();
+    for (int i = 0; i < hand.size(); i++) {
+        DistrictCard card = hand.get(i);
+        System.out.println("[" + i + "] '" + card.getName() + "' [" + card.getColor() + "] [" + card.getCost() + "]");
     }
+    System.out.println("Gold: " + player.getGold());
+}
 
     private void showGold(String command) {
         Player player;
@@ -233,36 +232,38 @@ public class App {
         System.out.println(player.getName() + " has " + player.getGold() + " gold.");
     }
 
-    private void buildDistrict(String command) {
-        Player player = players.get(crownedPlayerIndex);
+    private void buildDistrict(Player player, String command) {
         if (command.length() < 1) {
-            System.out.println("Usage: build <card index>");
+        System.out.println("Usage: build <card index>");
+        return;
+    }
+
+    try {
+        int index = Integer.parseInt(command);
+        List<DistrictCard> hand = player.getHand();
+
+        if (index < 0 || index >= hand.size()) {
+            System.out.println("Invalid card index.");
             return;
         }
-        try {
-            int index = Integer.parseInt(command);
-            List<DistrictCard> hand = player.getHand();
-            if (index < 0 || index >= hand.size()) {
-                System.out.println("Invalid card index.");
-                return;
-            }
 
-            DistrictCard card = hand.get(index);
-            if (player.hasBuilt(card.getName())) {
-                System.out.println("You already built a district with that name.");
-                return;
-            }
+        DistrictCard card = hand.get(index);
 
-            if (player.getGold() < card.getCost()) {
-                System.out.println("Not enough gold to build " + card.getName());
-                return;
-            }
-
-            player.buildDistrict(card);
-            System.out.println("Built: " + card.getName() + " [" + card.getColor() + card.getCost() + "]");
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid number format. Use: build <index>");
+        if (player.hasBuilt(card.getName())) {
+            System.out.println("You already built a district with that name.");
+            return;
         }
+
+        if (player.getGold() < card.getCost()) {
+            System.out.println("Not enough gold to build " + card.getName());
+            return;
+        }
+
+        player.buildDistrict(card);
+        System.out.println("Built: " + card.getName() + " [" + card.getColor() + card.getCost() + "]");
+    } catch (NumberFormatException e) {
+        System.out.println("Invalid number format. Use: build <index>");
+    }
     }
 
     private void showCity(String command) {
