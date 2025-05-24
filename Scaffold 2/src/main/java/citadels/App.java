@@ -121,15 +121,16 @@ public class App {
         } else if (inputChoice.equals("cards")) {
             DistrictCard card1 = deck.draw();
             DistrictCard card2 = deck.draw();
-            System.out.println("Choose a card to keep: [1] " + card1.getName() + " or [2] " + card2.getName());
+            System.out.println("Choose a card to keep: [a] " + card1.getName() + " [" + card1.getColor() + "] " + "[" + 
+            card1.getCost() + "]" + " or [b] " + card2.getName() + " [" + card2.getColor() + "] " + "[" + card2.getCost() + "]");
 
             String choice = "";
             while (true) {
                 choice = input.nextLine().trim();
-                if (choice.equals("1")) {
+                if (choice.equals("a")) {
                     player.drawCard(card1);
                     break;
-                } else if (choice.equals("2")) {
+                } else if (choice.equals("b")) {
                     player.drawCard(card2);
                     break;
                 } else {
@@ -153,8 +154,8 @@ public class App {
             crownedPlayerIndex = (crownedPlayerIndex + 1) % players.size();
             return;
         }
-
         commandProcessor.process(player, command, players);
+        System.out.println();
     }
 }
 
@@ -273,7 +274,7 @@ public class App {
                 int index = Integer.parseInt(command) - 1;
                 player = players.get(index);
             } catch (Exception e) {
-                System.out.println("Invalid player number. Example: citadel 2");
+                System.out.println("Invalid player number");
                 return;
             }
         } else {
@@ -281,8 +282,8 @@ public class App {
         }
 
         System.out.println(player.getName() + "'s city:");
-        for (DistrictCard c : player.getBuiltDistricts()) {
-            System.out.printf("- %s [%s%d]%n", c.getName(), c.getColor(), c.getCost());
+        for (DistrictCard city : player.getBuiltDistricts()) {
+            System.out.println("- " + city.getName() + "[" + city.getColor() + "] " + "[" + city.getCost() + "]");
         }
     }
 
