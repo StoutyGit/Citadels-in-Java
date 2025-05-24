@@ -123,6 +123,39 @@ public class App {
                 player.drawCard(card2);
             }
         }
+        while(true){
+        String[] command = input.nextLine().trim().toLowerCase().split(" ");
+        if(command.length == 0){
+            continue;
+        }
+        switch (command[0]) {
+                case "hand":
+                    showHand();
+                    break;
+                case "gold":
+                    showGold(command[1]);
+                    break;
+                case "build":
+                    buildDistrict(command[1]);
+                    break;
+                case "citadel":
+                case "list":
+                case "city":
+                    showCity(command[1]);
+                    break;
+                case "all":
+                    showAll();
+                    break;
+                case "end":
+                    System.out.println("You ended your turn.");
+                    crownedPlayerIndex = (crownedPlayerIndex + 1) % players.size();
+                    return;
+                case "help":
+                default:
+                    showHelp();
+                    break;
+            }
+        }
     }
 
     private void initializeCharacters() {
@@ -179,19 +212,19 @@ public class App {
         List<DistrictCard> hand = player.getHand();
         for (int i = 0; i < hand.size(); i++) {
             DistrictCard card = hand.get(i);
-            System.out.printf("[%d] %s [%s%d]%n", i, card.getName(), card.getColor(), card.getCost());
+            System.out.println("[" + i + "] " + "'" + card.getName() + "'" + " [" + card.getColor() + "] " + "[" + card.getCost() + "]");
         }
         System.out.println("Gold: " + player.getGold());
     }
 
-    private void showGold(String[] args) {
+    private void showGold(String command) {
         Player player;
-        if (args.length > 0) {
+        if (command.length() > 0) {
             try {
-                int index = Integer.parseInt(args[0]) - 1;
+                int index = Integer.parseInt(command) - 1;
                 player = players.get(index);
             } catch (Exception e) {
-                System.out.println("Invalid player number. Example: gold 2");
+                System.out.println("Invalid player number");
                 return;
             }
         } else {
@@ -200,14 +233,14 @@ public class App {
         System.out.println(player.getName() + " has " + player.getGold() + " gold.");
     }
 
-    private void buildDistrict(String[] args) {
+    private void buildDistrict(String command) {
         Player player = players.get(crownedPlayerIndex);
-        if (args.length < 1) {
+        if (command.length() < 1) {
             System.out.println("Usage: build <card index>");
             return;
         }
         try {
-            int index = Integer.parseInt(args[0]);
+            int index = Integer.parseInt(command);
             List<DistrictCard> hand = player.getHand();
             if (index < 0 || index >= hand.size()) {
                 System.out.println("Invalid card index.");
@@ -232,11 +265,11 @@ public class App {
         }
     }
 
-    private void showCity(String[] args) {
+    private void showCity(String command) {
         Player player;
-        if (args.length > 0) {
+        if (command.length() > 0) {
             try {
-                int index = Integer.parseInt(args[0]) - 1;
+                int index = Integer.parseInt(command) - 1;
                 player = players.get(index);
             } catch (Exception e) {
                 System.out.println("Invalid player number. Example: citadel 2");
@@ -294,30 +327,3 @@ public class App {
 
 
 
-// switch (command) {
-            //     case "hand":
-            //         showHand();
-            //         break;
-            //     case "gold":
-            //         showGold(args);
-            //         break;
-            //     case "build":
-            //         buildDistrict(args);
-            //         break;
-            //     case "citadel":
-            //     case "list":
-            //     case "city":
-            //         showCity(args);
-            //         break;
-            //     case "all":
-            //         showAll();
-            //         break;
-            //     case "end":
-            //         System.out.println("You ended your turn.");
-            //         crownedPlayerIndex = (crownedPlayerIndex + 1) % players.size();
-            //         break;
-            //     case "help":
-            //     default:
-            //         showHelp();
-            //         break;
-            // }
