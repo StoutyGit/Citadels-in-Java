@@ -251,6 +251,22 @@ public class App {
         } else if (inputChoice.equals("cards")) {
             DistrictCard card1 = deck.draw();
             DistrictCard card2 = deck.draw();
+
+            if (card1 == null && card2 == null) {
+                System.out.println("The deck is empty. No cards to draw.");
+                return;
+            } else if (card1 != null && card2 != null) {
+                System.out.println("Choose a card to keep: [a] " + card1.getName() + " [" + card1.getColor() + "] " + "[" + 
+            card1.getCost() + "]" + " or [b] " + card2.getName() + " [" + card2.getColor() + "] " + "[" + card2.getCost() + "]");
+            } else if (card1 != null) {
+                System.out.println("Only one card available. You receive: " + card1.getName());
+                player.drawCard(card1);
+                return;
+            } else {
+                System.out.println("Only one card available. You receive: " + card2.getName());
+                player.drawCard(card2);
+                return;
+}
             System.out.println("Choose a card to keep: [a] " + card1.getName() + " [" + card1.getColor() + "] " + "[" + 
             card1.getCost() + "]" + " or [b] " + card2.getName() + " [" + card2.getColor() + "] " + "[" + card2.getCost() + "]");
 

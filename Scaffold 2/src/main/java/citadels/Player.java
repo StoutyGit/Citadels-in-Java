@@ -7,6 +7,7 @@ public class Player {
     private List<DistrictCard> hand;
     private List<DistrictCard> builtDistricts;
     private CharacterCard character;
+    private boolean isAssassinated = false;
 
     public Player(String name){
         this.name = name;
@@ -29,11 +30,10 @@ public class Player {
 
     public void drawCard(DistrictCard newCard){
         hand.add(newCard);
-
     }
 
     public void buildDistrict(DistrictCard newCard){
-        if(hand.contains(newCard) == true && this.gold >= newCard.getCost()){
+        if(hand.contains(newCard) && this.gold >= newCard.getCost()){
             spendGold(newCard.getCost());
             hand.remove(newCard);
             builtDistricts.add(newCard);
@@ -42,16 +42,17 @@ public class Player {
 
     public boolean hasBuilt(String name){
         for (DistrictCard card : builtDistricts) {
-        if (card.getName().equals(name)) {
-            return true;
+            if (card.getName().equals(name)) {
+                return true;
+            }
         }
-    }
-    return false;
+        return false;
     }
 
     public void assignCharacter(CharacterCard character) {
-    this.character = character;
-}
+        this.character = character;
+        this.isAssassinated = false; // reset assassination at character assignment
+    }
 
     public String getName(){
         return this.name;
@@ -73,4 +74,11 @@ public class Player {
         return this.character;
     }
 
-}
+    public void setAssassinated(boolean assassinated) {
+        this.isAssassinated = assassinated;
+    }
+
+    public boolean isAssassinated() {
+        return isAssassinated;
+    }
+} 

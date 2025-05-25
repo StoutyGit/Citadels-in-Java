@@ -4,7 +4,11 @@ import java.io.*;
 import java.util.*;
 
 public class Deck {
-    private final List<DistrictCard> cards = new ArrayList<>();
+    private List<DistrictCard> cards;
+
+    public Deck(){
+        this.cards = new ArrayList<>();
+    }
 
     public void loadFromFile(File file) {
         try (Scanner scanner = new Scanner(file)) {
