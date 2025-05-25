@@ -13,20 +13,40 @@ public class UserCommands {
         String command = input[0];
         String arg = input.length > 1 ? input[1] : "";
         System.out.println("");
-        if (command.equals("hand")) {
+        switch (command) {
+        case "hand":
             showHand(player);
-        } else if (command.equals("gold")) {
+            break;
+
+        case "gold":
             showGold(player, arg);
-        } else if (command.equals("build")) {
+            break;
+
+        case "build":
             buildDistrict(player, arg);
-        } else if (command.equals("citadel") || command.equals("list") || command.equals("city")) {
+            break;
+
+        case "citadel":
+        case "list":
+        case "city":
             showCity(player);
-        } else if (command.equals("all")) {
+            break;
+
+        case "all":
             showAll(players);
-        } else if (command.equals("help")) {
+            break;
+
+        case "help":
             showHelp();
-        } else {
-            System.out.println("Unknown command. Type 'help' to see what you can do.");
+            break;
+
+        case "debug":
+            toggleDebug();
+            break;
+
+        default:
+            System.out.println("Unknown command. Type 'help' to see available actions");
+            break;
         }
     }
 
@@ -100,7 +120,12 @@ public class UserCommands {
             playerName += " (you)";
         }
 
-        System.out.println(playerName + ": cards = " + player.getHand().size() + " gold = " + player.getGold() + " cities = " + city);
+        String characterName = "";
+        if (player.getCharacter() != null) {
+            characterName = " - " + player.getCharacter().getName();
+        }
+
+        System.out.println(playerName + characterName + ": cards = " + player.getHand().size() + " gold = " + player.getGold() + " cities = " + city);
     }
 }
 
@@ -113,5 +138,17 @@ public class UserCommands {
         System.out.println("all : show all player info");
         System.out.println("help : show this help message");
         System.out.println("end : end your turn");
+    }
+
+    private void toggleDebug(){
+        if(App.debugMode == false){
+            System.out.println("Debug Mode Enabled");
+            App.debugMode = true;
+        }
+        else{
+            System.out.println("Debug Mode Disabled");
+            App.debugMode = false;
+        }
+
     }
 }

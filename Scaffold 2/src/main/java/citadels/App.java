@@ -17,6 +17,7 @@ public class App {
     private List<Player> players = new ArrayList<>();
     private int crownedPlayerIndex;
     private boolean gameOver = false;
+    public static boolean debugMode = false;
 
     private Scanner input = new Scanner(System.in);
 
@@ -37,6 +38,10 @@ public class App {
             System.out.println("Press t to process turns");
             
             while(gameOver == false){
+                if(checkGameEnd() == true){
+                    gameOver = true;
+                    gameEnd();
+                }
                 gameLoop();
             }
             
@@ -100,6 +105,13 @@ public class App {
                         playerTurn(player);
                     } else {
                         System.out.println(player.getName() + " is the " + player.getCharacter().getName());
+                        if (App.debugMode == true) {
+                        System.out.println("[DEBUG] " + player.getName() + "'s hand:");
+                        List<DistrictCard> hand = player.getHand();
+                        for (int j = 0; j < hand.size(); j++) {
+                            DistrictCard card = hand.get(j);
+                            System.out.println("[" + j + "] " + card.getName() + " [" + card.getColor() + "] " + "[" +  card.getCost() + "]");
+                        }
                         // TODO: computer player logic
                     }
                 }
@@ -158,6 +170,45 @@ public class App {
         System.out.println();
     }
 }
+
+    private boolean checkGameEnd(){
+        for(Player player : players){
+            if(player.getBuiltDistricts().size() >= 8){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void gameEnd(){
+        System.out.println("Game over! Final scores:");
+
+        int highestScore = -1;
+        Player winner = null;
+
+        for (Player player : players) {
+            int score = 0;
+            List<DistrictCard> city = player.getBuiltDistricts();
+            for (int i = 0; i < city.size(); i++) {
+                score += city.get(i).getCost();
+            }
+
+            String characterName = "";
+            if (player.getCharacter() != null) {
+                characterName = player.getCharacter().getName();
+            }
+            System.out.println(player.getName() + characterName + " scored " + score + " points.");
+
+            if (score > highestScore) {
+                highestScore = score;
+                winner = player;
+            }
+        }
+
+        if (winner != null) {
+            System.out.println("The winner is: " + winner.getName() + " with " + highestScore + " points!");
+        }
+    }
 
     private void initializeCharacters() {
         characterDeck.add(new CharacterCard("Assassin", 1, "Kill a character"));
