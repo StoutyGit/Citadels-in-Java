@@ -15,6 +15,7 @@ public class App {
     private Deck deck;
     private List<CharacterCard> characterDeck = new ArrayList<>();
     private List<Player> players = new ArrayList<>();
+    Computer ComputerLogic = new Computer(deck);
     private int crownedPlayerIndex;
     private boolean gameOver = false;
     public static boolean debugMode = false;
@@ -103,17 +104,20 @@ public class App {
                     if (players.indexOf(player) == 0) {
                         System.out.println("Your turn.");
                         playerTurn(player);
-                    } else {
+                    } 
+                    else {
                         System.out.println(player.getName() + " is the " + player.getCharacter().getName());
-                        if (App.debugMode == true) {
-                        System.out.println("[DEBUG] " + player.getName() + "'s hand:");
-                        List<DistrictCard> hand = player.getHand();
-                        for (int j = 0; j < hand.size(); j++) {
-                            DistrictCard card = hand.get(j);
-                            System.out.println("[" + j + "] " + card.getName() + " [" + card.getColor() + "] " + "[" +  card.getCost() + "]");
-                        }
-                        // TODO: computer player logic
+                            if (App.debugMode == true) {
+                            System.out.println("[DEBUG] " + player.getName() + "'s hand:");
+                            List<DistrictCard> hand = player.getHand();
+                            for (int j = 0; j < hand.size(); j++) {
+                                DistrictCard card = hand.get(j);
+                                System.out.println("[" + j + "] " + card.getName() + " [" + card.getColor() + "] " + "[" +  card.getCost() + "]");
+                            }
+                            System.out.println(player.getName() + " has " + player.getGold() + " gold.");
+                            ComputerLogic.takeTurn(player);
                     }
+                }
                 }
             }
         }
