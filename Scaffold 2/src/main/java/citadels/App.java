@@ -15,7 +15,7 @@ public class App {
     private Deck deck;
     private List<CharacterCard> characterDeck = new ArrayList<>();
     private List<Player> players = new ArrayList<>();
-    Computer ComputerLogic = new Computer(deck);
+    private Computer ComputerLogic; // Don't initialize here
     private int crownedPlayerIndex;
     private boolean gameOver = false;
     public static boolean debugMode = false;
@@ -25,10 +25,14 @@ public class App {
 	public App() {
 		try {
             cardsFile = new File(URLDecoder.decode(this.getClass().getResource("cards.tsv").getPath(), StandardCharsets.UTF_8.name()));
-             deck = new Deck();
+            deck = new Deck();
             deck.loadFromFile(cardsFile);
             initializeCharacters();
             setupPlayers();
+            
+            // Initialize Computer AFTER deck and players are ready
+            ComputerLogic = new Computer(deck, players);
+            
             System.out.println("Shuffling deck...");
             System.out.println("Adding characters...");
             System.out.println("Dealing cards...");
@@ -52,45 +56,155 @@ public class App {
     }
 
     private void gameLoop() {
-        System.out.println("================================");
-        System.out.println("SELECTION PHASE");
-        System.out.println("================================");
-        System.out.print("> ");
-        pressedT();
-        List<CharacterCard> selectionDeck = new ArrayList<>(characterDeck);
+    System.out.println("================================");
+    System.out.println("SELECTION PHASE");
+    System.out.println("================================");
+    System.out.print("> ");
+    pressedT();
+
+    boolean validDeck = false;
+    List<CharacterCard> selectionDeck = new ArrayList<>();
+    CharacterCard hiddenCard = null;
+    List<CharacterCard> visibleDiscarded = new ArrayList<>();
+
+    while (!validDeck) {
+        selectionDeck = new ArrayList<>(characterDeck);
         Collections.shuffle(selectionDeck);
 
-        CharacterCard hiddenCard = selectionDeck.remove(0);
-        System.out.println("A mystery character was removed.");
+        visibleDiscarded.clear();
+        hiddenCard = null;
 
-        int faceUpCount = 0;
-        if (players.size() == 4) {
-            faceUpCount = 2;
-        } else if (players.size() == 5) {
-            faceUpCount = 1;
-        }
+        int numPlayers = players.size();
 
-        for (int i = 0; i < faceUpCount; i++) {
-            CharacterCard removed = selectionDeck.remove(0);
-            if (removed.getName().equals("King")) {
-                System.out.println("King was removed. The King cannot be visibly removed, trying again..");
-                selectionDeck.add(removed);
-                Collections.shuffle(selectionDeck);
-                i--;
-            } else {
-                System.out.println(removed.getName() + " was removed.");
+        if (numPlayers == 7) {
+            // For 7 players, remove 1 hidden card but save it for the last player
+            hiddenCard = selectionDeck.remove(0);
+            validDeck = true;
+        } else if (numPlayers >= 4 && numPlayers <= 6) {
+            hiddenCard = selectionDeck.remove(0);
+
+            int faceUpCount = 0;
+            if (numPlayers == 4) faceUpCount = 2;
+            if (numPlayers == 5) faceUpCount = 1;
+            if (numPlayers == 6) faceUpCount = 0;
+
+            boolean kingRemoved = false;
+            for (int i = 0; i < faceUpCount; i++) {
+                CharacterCard removed = selectionDeck.remove(0);
+                if (removed.getName().equals("King")) {
+                    kingRemoved = true;
+                    break;
+                }
+                visibleDiscarded.add(removed);
             }
-        }
 
-        for (int i = 0; i < players.size(); i++) {
-            Player player = players.get((crownedPlayerIndex + i) % players.size());
-            CharacterCard chosen = selectionDeck.remove(0);
+            if (!kingRemoved) {
+                validDeck = true;
+            }
+        } else {
+            System.out.println("Invalid number of players for character selection.");
+            return;
+        }
+    }
+
+    if (players.size() == 7) {
+        System.out.println("A mystery character will be offered to the last player.");
+    } else {
+        System.out.println("A mystery character was removed.");
+        for (CharacterCard removed : visibleDiscarded) {
+            System.out.println(removed.getName() + " was removed.");
+        }
+    }
+
+    List<CharacterCard> draftPool = new ArrayList<>(selectionDeck);
+    List<Player> selectionOrder = new ArrayList<>();
+    for (int i = 0; i < players.size(); i++) {
+        selectionOrder.add(players.get((crownedPlayerIndex + i) % players.size()));
+    }
+
+    if (players.size() == 7) {
+        // Assign to first 6 players
+        for (int i = 0; i < players.size() - 1; i++) {
+            Player player = selectionOrder.get(i);
+            CharacterCard chosen = draftPool.remove(0);
             player.assignCharacter(chosen);
             System.out.println(player.getName() + " chose a character.");
         }
 
-        turnPhase();
+        // Last player chooses between 1 remaining + hidden card
+        Player lastPlayer = selectionOrder.get(players.size() - 1);
+        CharacterCard card1 = draftPool.remove(0);
+        CharacterCard card2 = hiddenCard;
+
+        if (lastPlayer == players.get(0)) {
+            // Human player chooses
+            System.out.println("Choose your character:");
+            System.out.println("[0] " + card1.getName() + " - " + card1.getAbility());
+            System.out.println("[1] " + card2.getName() + " - " + card2.getAbility());
+            System.out.print("Enter 0 or 1: ");
+
+            int choice = -1;
+            while (choice != 0 && choice != 1) {
+                try {
+                    choice = Integer.parseInt(input.nextLine().trim());
+                    if (choice != 0 && choice != 1) {
+                        System.out.println("Invalid choice. Enter 0 or 1:");
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid input. Enter a number.");
+                }
+            }
+
+            CharacterCard chosen = (choice == 0) ? card1 : card2;
+            lastPlayer.assignCharacter(chosen);
+            System.out.println("You chose: " + chosen.getName());
+        } else {
+            // AI chooses
+            CharacterCard chosen = new Random().nextBoolean() ? card1 : card2;
+            lastPlayer.assignCharacter(chosen);
+            System.out.println(lastPlayer.getName() + " chose a character.");
+        }
+
+    } else {
+        // All players select normally
+        for (int i = 0; i < selectionOrder.size(); i++) {
+            Player player = selectionOrder.get(i);
+
+            if (player == players.get(0)) {
+                // Human player selects
+                System.out.println("Available characters:");
+                for (int j = 0; j < draftPool.size(); j++) {
+                    CharacterCard c = draftPool.get(j);
+                    System.out.println("[" + j + "] " + c.getName() + " - " + c.getAbility());
+                }
+                System.out.print("Choose your character by number: ");
+
+                int choice = -1;
+                while (choice < 0 || choice >= draftPool.size()) {
+                    try {
+                        choice = Integer.parseInt(input.nextLine().trim());
+                        if (choice < 0 || choice >= draftPool.size()) {
+                            System.out.println("Invalid selection. Try again:");
+                        }
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid input. Enter a number.");
+                    }
+                }
+
+                CharacterCard chosen = draftPool.remove(choice);
+                player.assignCharacter(chosen);
+                System.out.println(player.getName() + " chose: " + chosen.getName());
+
+            } else {
+                CharacterCard chosen = draftPool.remove(0);
+                player.assignCharacter(chosen);
+                System.out.println(player.getName() + " chose a character.");
+            }
+        }
     }
+
+    turnPhase();
+}
 
     private void turnPhase() {
         System.out.println("");
@@ -115,8 +229,8 @@ public class App {
                                 System.out.println("[" + j + "] " + card.getName() + " [" + card.getColor() + "] " + "[" +  card.getCost() + "]");
                             }
                             System.out.println(player.getName() + " has " + player.getGold() + " gold.");
-                            ComputerLogic.takeTurn(player);
                     }
+                    ComputerLogic.takeTurn(player);
                 }
                 }
             }
@@ -381,6 +495,3 @@ public class App {
     }
 
 }
-
-
-

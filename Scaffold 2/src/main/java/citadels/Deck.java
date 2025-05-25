@@ -38,7 +38,7 @@ public class Deck {
     }
 
     public DistrictCard draw() {
-        if (!cards.isEmpty()) {
+        if (cards.isEmpty() == false) {
             return cards.remove(0);
         }
         return null;

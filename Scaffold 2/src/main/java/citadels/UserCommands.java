@@ -4,6 +4,7 @@ import java.util.*;
 
 public class UserCommands {
     private Deck deck;
+    private int abilityCount = 0;
 
     public UserCommands(Deck deck) {
         this.deck = deck;
@@ -19,7 +20,7 @@ public class UserCommands {
             break;
 
         case "gold":
-            showGold(player, arg);
+            showGold(arg, players);
             break;
 
         case "build":
@@ -29,7 +30,7 @@ public class UserCommands {
         case "citadel":
         case "list":
         case "city":
-            showCity(player);
+            showCity(arg, players);
             break;
 
         case "all":
@@ -42,6 +43,16 @@ public class UserCommands {
 
         case "debug":
             toggleDebug();
+            break;
+
+        case "action":
+            if(abilityCount == 0){
+            player.getCharacter().useAbility(player, deck, players);
+            abilityCount += 1;
+            }
+            else{
+                System.out.println("Unable to use ability twice in one round");
+            }
             break;
 
         default:
@@ -60,8 +71,47 @@ public class UserCommands {
         System.out.println("Gold: " + player.getGold());
     }
 
-    private void showGold(Player player, String arg) {
-        System.out.println(player.getName() + " has " + player.getGold() + " gold.");
+    private void showGold(String arg, List<Player> players) {
+        Player targetPlayer = players.get(0);
+        if(arg.isEmpty() == false){
+            try{
+                int index = Integer.parseInt(arg) - 1;
+                if(index >= 0 && index < players.size()){
+                    targetPlayer = players.get(index);
+                }
+                else{
+                     System.out.println("Invalid player number. Must be between 1 and " + players.size());
+                     return;
+                }
+            } catch (NumberFormatException e){
+                System.out.println("Invalid input. Please enter a player number");
+                return;
+            }
+        }
+        System.out.println(targetPlayer.getName() + " has " + targetPlayer.getGold() + " gold.");
+    }
+    
+    private void showCity(String arg, List<Player> players) {
+        Player targetPlayer = players.get(0);
+        if(arg.isEmpty() == false){
+            try{
+                int index = Integer.parseInt(arg) - 1;
+                if(index >= 0 && index < players.size()){
+                    targetPlayer = players.get(index);
+                }
+                else{
+                    System.out.println("Invalid player number. Must be between 1 and " + players.size());
+                     return;
+                }
+            } catch (NumberFormatException e){
+                System.out.println("Invalid input. Please enter a player number");
+                return;
+            }
+            System.out.println(targetPlayer.getName() + "'s city:");
+            for (DistrictCard card : targetPlayer.getBuiltDistricts()) {
+                System.out.println(card.getName() + " [" + card.getColor() + "] [" + card.getCost() + "]");
+            }
+        }
     }
 
     private void buildDistrict(Player player, String arg) {
@@ -89,16 +139,11 @@ public class UserCommands {
             player.buildDistrict(card);
             System.out.println("Built: " + card.getName() + " [" + card.getColor() + "] " + "[" + card.getCost() + "]");
         } catch (NumberFormatException e) {
-            System.out.println("Invalid format. Use: build <index>");
+            System.out.println("Invalid format. Use: build <place in hand>");
         }
     }
 
-    private void showCity(Player player) {
-        System.out.println(player.getName() + "'s city:");
-        for (DistrictCard card : player.getBuiltDistricts()) {
-            System.out.println(card.getName() + " [" + card.getColor() + "] " + "[" + card.getCost() + "]");
-        }
-    }
+    
 
     private void showAll(List<Player> players) {
     for (int i = 0; i < players.size(); i++) {
@@ -131,13 +176,17 @@ public class UserCommands {
 
     private void showHelp() {
         System.out.println("Available commands:");
-        System.out.println("hand : show your hand");
-        System.out.println("gold : show your gold");
-        System.out.println("build <index> : build a district");
-        System.out.println("city : show your built districts");
-        System.out.println("all : show all player info");
-        System.out.println("help : show this help message");
-        System.out.println("end : end your turn");
+        System.out.println("info: Show information about a character or building");
+        System.out.println("t: Processes turns");
+        System.out.println("");
+        System.out.println("all : Show all player info");
+        System.out.println("citadel/list/city : Show districts built by a player");
+        System.out.println("hand : Shows cards in hand");
+        System.out.println("gold[p] : Shows gold of a player");
+        System.out.println("");
+        System.out.println("build <place in hand> : Builds a building into your city");
+        System.out.println("action : Gives info about your special action and how to perform it");
+        System.out.println("end : Ends your turn");
     }
 
     private void toggleDebug(){

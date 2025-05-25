@@ -3,16 +3,18 @@ import java.util.*;
 
 public class Computer {
     private Deck deck;
+    private List<Player> players;
 
-    public Computer(Deck deck){
+    public Computer(Deck deck, List<Player> players){
         this.deck = deck;
+        this.players = players;
     }
 
     public void takeTurn(Player computer) {
         System.out.println(computer.getName() + " is thinking...");
 
         // Decision: take gold or cards
-        if (computer.getHand().size() < 2) {
+        if (computer.getHand().size() < 2 && deck.isEmpty() == false) {
             System.out.println(computer.getName() + " decides to draw cards.");
             DistrictCard card1 = deck.draw();
             DistrictCard card2 = deck.draw();
@@ -48,26 +50,7 @@ public class Computer {
             System.out.println(computer.getName() + " has nothing affordable or buildable this turn.");
         }
 
-        // Simple action decision (placeholder - can expand later)
-        if (computer.getCharacter() != null) {
-            String role = computer.getCharacter().getName();
-            if (role.equals("Architect")) {
-                System.out.println("[ACTION] " + computer.getName() + " (Architect) draws 2 extra cards.");
-                computer.drawCard(deck.draw());
-                computer.drawCard(deck.draw());
-            } else if (role.equals("Merchant")) {
-                System.out.println("[ACTION] " + computer.getName() + " (Merchant) receives 1 extra gold.");
-                computer.addGold(1);
-            } else if (role.equals("King")) {
-                System.out.println("[ACTION] " + computer.getName() + " (King) gains 1 gold per yellow district.");
-                for (DistrictCard d : computer.getBuiltDistricts()) {
-                    if (d.getColor().equalsIgnoreCase("yellow")) {
-                        computer.addGold(1);
-                    }
-                }
-            } 
-        }
-
+        computer.getCharacter().useAbility(computer, deck, players);
         System.out.println(computer.getName() + " ends their turn.\n");
     }
 }
