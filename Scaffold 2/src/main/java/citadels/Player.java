@@ -8,6 +8,7 @@ public class Player {
     private List<DistrictCard> builtDistricts;
     private CharacterCard character;
     private boolean isAssassinated = false;
+    private boolean crown;
 
     public Player(String name){
         this.name = name;
@@ -72,6 +73,14 @@ public class Player {
 
     public CharacterCard getCharacter(){
         return this.character;
+    }
+
+    public void setReceiveCrown(boolean crown){
+        this.crown = crown;
+    }
+
+    public boolean receiveCrown(){
+        return this.crown;
     }
 
     public void setAssassinated(boolean assassinated) {

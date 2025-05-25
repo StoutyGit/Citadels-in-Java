@@ -15,14 +15,13 @@ public class Deck {
             if (scanner.hasNextLine()) scanner.nextLine();
             while (scanner.hasNextLine()) {
                 String[] parts = scanner.nextLine().split("\t");
-                if (parts.length < 5) continue;
-
+                if (parts.length < 4) continue; // require at least name, quantity, color, cost
                 String name = parts[0];
                 int quantity = Integer.parseInt(parts[1]);
                 String color = parts[2];
                 int cost = Integer.parseInt(parts[3]);
-                String text = parts[4];
-
+                String text = (parts.length >= 5) ? parts[4] : ""; 
+                // System.out.println("Loading card: " + name + " x" + quantity);
                 for (int i = 0; i < quantity; i++) {
                     cards.add(new DistrictCard(name, color, cost, text));
                 }
@@ -32,6 +31,15 @@ public class Deck {
             System.err.println("Error: cards.tsv not found.");
         }
     }
+
+    public void showAllCards() {
+    System.out.println("Cards currently in the deck:");
+    int count = 1;
+    for (DistrictCard card : cards) {
+        System.out.println(count + ". " + card.getName() + " [" + card.getColor() + "] " + "[" + card.getCost() + "]");
+        count++;
+    }
+}
 
     public void shuffle() {
         Collections.shuffle(cards);

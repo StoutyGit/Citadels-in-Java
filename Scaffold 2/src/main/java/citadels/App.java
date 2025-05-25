@@ -39,6 +39,7 @@ public class App {
             System.out.println("Starting Citadels with " + players.size() + " players...");
             System.out.println("You are player 1");
             assignCrown();
+            // deck.showAllCards();
             dealStartingCards();
             System.out.println("Press t to process turns");
             
@@ -251,37 +252,33 @@ public class App {
         } else if (inputChoice.equals("cards")) {
             DistrictCard card1 = deck.draw();
             DistrictCard card2 = deck.draw();
-
+            
             if (card1 == null && card2 == null) {
-                System.out.println("The deck is empty. No cards to draw.");
-                return;
-            } else if (card1 != null && card2 != null) {
-                System.out.println("Choose a card to keep: [a] " + card1.getName() + " [" + card1.getColor() + "] " + "[" + 
-            card1.getCost() + "]" + " or [b] " + card2.getName() + " [" + card2.getColor() + "] " + "[" + card2.getCost() + "]");
-            } else if (card1 != null) {
-                System.out.println("Only one card available. You receive: " + card1.getName());
-                player.drawCard(card1);
-                return;
-            } else {
-                System.out.println("Only one card available. You receive: " + card2.getName());
-                player.drawCard(card2);
-                return;
-}
-            System.out.println("Choose a card to keep: [a] " + card1.getName() + " [" + card1.getColor() + "] " + "[" + 
-            card1.getCost() + "]" + " or [b] " + card2.getName() + " [" + card2.getColor() + "] " + "[" + card2.getCost() + "]");
+                System.out.println("The deck is empty. You receive 2 gold instead.");
+                player.addGold(2);
+                break;
+            }
 
-            String choice = "";
-            while (true) {
-                choice = input.nextLine().trim();
-                if (choice.equals("a")) {
-                    player.drawCard(card1);
-                    break;
-                } else if (choice.equals("b")) {
-                    player.drawCard(card2);
-                    break;
-                } else {
-                    System.out.println("Invalid input. Please type 1 or 2 to choose a card.");
+            if (card1 != null && card2 != null) {
+                System.out.println("Choose a card to keep: [a] " + card1.getName() + " or [b] " + card2.getName());
+                String choice = "";
+                while (true) {
+                    choice = input.nextLine().trim().toLowerCase();
+                    if (choice.equals("a")) {
+                        player.drawCard(card1);
+                        break;
+                    } else if (choice.equals("b")) {
+                        player.drawCard(card2);
+                        break;
+                    } else {
+                        System.out.println("Invalid choice. Please enter 'a' or 'b'.");
+                    }
                 }
+            } else {
+                // Only one card is available
+                DistrictCard onlyCard = (card1 != null) ? card1 : card2;
+                System.out.println("Only one card available. You automatically receive: " + onlyCard.getName());
+                player.drawCard(onlyCard);
             }
 
             break;
@@ -298,6 +295,7 @@ public class App {
         if (command.length > 0 && command[0].equals("end")) {
             System.out.println("You ended your turn.");
             crownedPlayerIndex = (crownedPlayerIndex + 1) % players.size();
+            updateCrownAfterRound();
             return;
         }
         commandProcessor.process(player, command, players);
@@ -383,6 +381,18 @@ public class App {
         crownedPlayerIndex = new Random().nextInt(players.size());
         System.out.println(players.get(crownedPlayerIndex).getName() + " is the crowned player and goes first.");
     }
+
+    private void updateCrownAfterRound() {
+    for (int i = 0; i < players.size(); i++) {
+        Player player = players.get(i);
+        if (player.receiveCrown() == true) {
+            crownedPlayerIndex = i;
+            System.out.println(player.getName() + " receives the crown for the next round.");
+        }
+        player.setReceiveCrown(false);
+        
+    }
+}
 
     private void dealStartingCards() {
         for (Player player : players) {

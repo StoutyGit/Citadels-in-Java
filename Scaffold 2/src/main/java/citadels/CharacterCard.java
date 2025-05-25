@@ -48,11 +48,13 @@ public class CharacterCard extends Card{
 
         case "King":
             System.out.println("[ACTION] " + player.getName() + " (King) gains 1 gold per yellow district.");
-            for (DistrictCard d : player.getBuiltDistricts()) {
-                if (d.getColor().equalsIgnoreCase("yellow")) {
+            for (DistrictCard district : player.getBuiltDistricts()) {
+                if (district.getColor().equalsIgnoreCase("yellow")) {
                     player.addGold(1);
                 }
             }
+            System.out.println(player.getName() + " will receive the crown next round.");
+            player.setReceiveCrown(true);
             break;
 
         case "Bishop":
