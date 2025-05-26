@@ -1,18 +1,37 @@
 package citadels;
 
+import java.util.Scanner;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
+/**
+ * Each character has a name, a turn order, and a special ability.
+ * Characters can perform actions that impact the game state when activated.
+ */
 public class CharacterCard extends Card{
     private int turnOrder;
     private String ability;
+    
 
+    /**
+     * Constructs a CharacterCard with the specified name, turn order, and ability description.
+     * @param name the name of the character
+     * @param turnOrder the order in which this character takes their turn
+     * @param ability a description of the character's ability
+     */
     public CharacterCard(String name, int turnOrder, String ability) {
         super(name);
         this.turnOrder = turnOrder;
         this.ability = ability;
     }
 
+    /**
+     * Returns a list of all available character cards used in the game.
+     * @return a list of predefined CharacterCard objects
+     */
     public static List<CharacterCard> getCharacters() {
     List<CharacterCard> characters = new ArrayList<>();
     characters.add(new CharacterCard("Assassin", 1, "Kill a character."));
@@ -26,17 +45,35 @@ public class CharacterCard extends Card{
     return characters;
 }
 
+    /**
+     * Returns the turn order of the character.
+     * @return the character's turn order
+     */
     public int getTurnOrder() {
         return turnOrder;
     }
 
+    /**
+     * Returns the ability description of the character.
+     * @return the character's ability description
+     */
     public String getAbility() {
         return ability;
     }
 
-    public void useAbility(Player player, Deck deck, java.util.List<Player> players) {
+
+     /**
+     * Runs the special ability associated with this character.
+     * Executes specific effects based on the character role and updates the game state.
+     *
+     * @param player  the player using the ability
+     * @param deck    the main deck of district cards
+     * @param players the list of all players in the game
+     */
+    public void useAbility(Player player, Deck deck, List<Player> players) {
     String role = getName();
-    boolean isHumanPlayer = players.indexOf(player) == 0; // Assuming human is always Player 1
+    boolean isHumanPlayer = players.indexOf(player) == 0; // Variable to allow player to select who and what they want to do
+    // whilst computer is random
 
     switch (role) {
         case "Architect":
@@ -72,8 +109,8 @@ public class CharacterCard extends Card{
 
         case "Bishop":
             System.out.println("[ACTION] " + player.getName() + " (Bishop) gains 1 gold per blue district.");
-            for (DistrictCard d : player.getBuiltDistricts()) {
-                if (d.getColor().equalsIgnoreCase("blue")) {
+            for (DistrictCard district : player.getBuiltDistricts()) {
+                if (district.getColor().equalsIgnoreCase("blue")) {
                     player.addGold(1);
                 }
             }
@@ -86,11 +123,12 @@ public class CharacterCard extends Card{
             List<DistrictCard> newHand = new ArrayList<>();
 
             for (int i = 0; i < oldHand.size(); i++) {
-                if (!deck.isEmpty()) {
+                if (deck.isEmpty() == false) {
                     DistrictCard newCard = deck.draw();
                     if (newCard != null) {
                         newHand.add(newCard);
-                    } else {
+                    } 
+                    else {
                         System.out.println("Deck is empty, cannot redraw remaining cards.");
                         break;
                     }
@@ -98,12 +136,15 @@ public class CharacterCard extends Card{
             }
             player.getHand().clear();
             player.getHand().addAll(newHand);
+
+            // Add second magician ability
+
             break;
 
         case "Warlord":
             System.out.println("[ACTION] " + player.getName() + " (Warlord) gains 1 gold per red district.");
-            for (DistrictCard d : player.getBuiltDistricts()) {
-                if (d.getColor().equalsIgnoreCase("red")) {
+            for (DistrictCard district : player.getBuiltDistricts()) {
+                if (district.getColor().equalsIgnoreCase("red")) {
                     player.addGold(1);
                 }
             }
@@ -114,13 +155,13 @@ public class CharacterCard extends Card{
             
             for (Player target : players) {
                 if (target != player && target.getBuiltDistricts().size() > 0 && target.getBuiltDistricts().size() < 8) {
-                    // Check if target is not Bishop (immune to Warlord)
+                    // Check if target is not Bishop
                     if (target.getCharacter() == null || !target.getCharacter().getName().equals("Bishop")) {
-                        for (DistrictCard d : target.getBuiltDistricts()) {
-                            int cost = d.getCost() - 1;
+                        for (DistrictCard district : target.getBuiltDistricts()) {
+                            int cost = district.getCost() - 1;
                             if (player.getGold() >= cost) {
                                 validTargets.add(target);
-                                validBuildings.add(d);
+                                validBuildings.add(district);
                             }
                         }
                     }
@@ -129,8 +170,8 @@ public class CharacterCard extends Card{
             
             if (validTargets.isEmpty()) {
                 System.out.println(player.getName() + " cannot destroy any buildings (insufficient gold or no valid targets).");
-            } else if (isHumanPlayer) {
-                // Human player chooses
+            } 
+            else if (isHumanPlayer) {
                 System.out.println("Choose a building to destroy:");
                 for (int i = 0; i < validBuildings.size(); i++) {
                     DistrictCard building = validBuildings.get(i);
@@ -139,7 +180,7 @@ public class CharacterCard extends Card{
                     System.out.println("[" + i + "] " + building.getName() + " owned by " + owner.getName() + " (Cost: " + cost + " gold)");
                 }
                 
-                java.util.Scanner scanner = new java.util.Scanner(System.in);
+                Scanner scanner = new Scanner(System.in);
                 int choice = -1;
                 while (choice < 0 || choice >= validBuildings.size()) {
                     try {
@@ -163,7 +204,7 @@ public class CharacterCard extends Card{
                 
             } else {
                 // Computer chooses randomly
-                int randomIndex = new java.util.Random().nextInt(validBuildings.size());
+                int randomIndex = new Random().nextInt(validBuildings.size());
                 DistrictCard toDestroy = validBuildings.get(randomIndex);
                 Player targetPlayer = validTargets.get(randomIndex);
                 int cost = toDestroy.getCost() - 1;
@@ -177,7 +218,7 @@ public class CharacterCard extends Card{
         case "Thief":
             System.out.println("[ACTION] " + player.getName() + " (Thief) picks a target to rob.");
             
-            // Get list of characters that can be robbed (not Assassin, and not self)
+            // Get list of characters that can be robbed (not Assassin)
             List<String> availableTargets = new ArrayList<>();
             List<Player> targetPlayers = new ArrayList<>();
             
@@ -192,14 +233,14 @@ public class CharacterCard extends Card{
             
             if (availableTargets.isEmpty()) {
                 System.out.println("No valid targets to rob.");
-            } else if (isHumanPlayer) {
-                // Human player chooses
+            } 
+            else if (isHumanPlayer) {
                 System.out.println("Choose a character to rob:");
                 for (int i = 0; i < availableTargets.size(); i++) {
                     System.out.println("[" + i + "] " + availableTargets.get(i));
                 }
                 
-                java.util.Scanner scanner = new java.util.Scanner(System.in);
+                Scanner scanner = new Scanner(System.in);
                 int choice = -1;
                 while (choice < 0 || choice >= availableTargets.size()) {
                     try {
@@ -220,9 +261,10 @@ public class CharacterCard extends Card{
                 player.addGold(stolenGold);
                 System.out.println(player.getName() + " steals " + stolenGold + " gold from the " + targetCharacter + " (" + targetPlayer.getName() + ").");
                 
-            } else {
-                // Computer chooses randomly
-                int randomIndex = new java.util.Random().nextInt(availableTargets.size());
+            } 
+            // Computer chooses randomly
+            else {    
+                int randomIndex = new Random().nextInt(availableTargets.size());
                 Player targetPlayer = targetPlayers.get(randomIndex);
                 String targetCharacter = availableTargets.get(randomIndex);
                 int stolenGold = targetPlayer.getGold();
@@ -235,8 +277,8 @@ public class CharacterCard extends Card{
         case "Assassin":
             System.out.println("[ACTION] " + player.getName() + " (Assassin) picks a character to kill.");
             
-            // List of characters that can be assassinated (not self)
-            List<String> assassinTargets = java.util.Arrays.asList("King", "Warlord", "Architect", "Magician", "Bishop", "Merchant", "Thief");
+            // List of characters that can be assassinated
+            List<String> assassinTargets = Arrays.asList("King", "Warlord", "Architect", "Magician", "Bishop", "Merchant", "Thief");
             List<String> validAssassinTargets = new ArrayList<>();
             
             for (String target : assassinTargets) {
@@ -246,13 +288,12 @@ public class CharacterCard extends Card{
             }
             
             if (isHumanPlayer) {
-                // Human player chooses
                 System.out.println("Choose a character to assassinate:");
                 for (int i = 0; i < validAssassinTargets.size(); i++) {
                     System.out.println("[" + i + "] " + validAssassinTargets.get(i));
                 }
                 
-                java.util.Scanner scanner = new java.util.Scanner(System.in);
+                Scanner scanner = new Scanner(System.in);
                 int choice = -1;
                 while (choice < 0 || choice >= validAssassinTargets.size()) {
                     try {
@@ -269,15 +310,12 @@ public class CharacterCard extends Card{
                 String chosen = validAssassinTargets.get(choice);
                 System.out.println(player.getName() + " assassinates the " + chosen + ". They will skip their turn.");
                 
-                // Mark the chosen character as assassinated (you'll need to implement this logic in your turn system)
                 markCharacterAsAssassinated(chosen, players);
                 
-            } else {
-                // Computer chooses randomly
-                String chosen = validAssassinTargets.get(new java.util.Random().nextInt(validAssassinTargets.size()));
-                System.out.println(player.getName() + " assassinates the " + chosen + ". They will skip their turn.");
-                
-                // Mark the chosen character as assassinated
+            } 
+            else {
+                String chosen = validAssassinTargets.get(new Random().nextInt(validAssassinTargets.size()));
+                System.out.println(player.getName() + " assassinates the " + chosen + ". They will skip their turn.");                
                 markCharacterAsAssassinated(chosen, players);
             }
             break;
@@ -287,13 +325,18 @@ public class CharacterCard extends Card{
     }
 }
 
-// Helper method to mark a character as assassinated
-private void markCharacterAsAssassinated(String characterName, java.util.List<Player> players) {
-    for (Player p : players) {
-        if (p.getCharacter() != null && p.getCharacter().getName().equals(characterName)) {
-            // You'll need to add a method to mark players as assassinated
-            // For now, we'll just print a message
-            System.out.println("The " + characterName + " (" + p.getName() + ") has been assassinated and will skip their turn.");
+
+ /**
+     * Marks the given character name as assassinated by updating the corresponding player's state.
+     * The player with the assassinated character will skip their turn.
+     * @param characterName the name of the character to mark as assassinated
+     * @param players the list of all players in the game
+     */
+private void markCharacterAsAssassinated(String characterName, List<Player> players) {
+    for (Player player : players) {
+        if (player.getCharacter() != null && player.getCharacter().getName().equals(characterName)) {
+            System.out.println("The " + characterName + " (" + player.getName() + ") has been assassinated and will skip their turn.");
+            player.setAssassinated(true);
             break;
         }
     }

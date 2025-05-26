@@ -1,0 +1,631 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>App.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Scaffold 2</a> &gt; <a href="index.source.html" class="el_package">citadels</a> &gt; <span class="el_source">App.java</span></div><h1>App.java</h1><pre class="source lang-java linenums">package citadels;
+
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+
+import java.io.*;
+import java.util.*;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.*;
+import org.json.simple.parser.*;
+
+
+public class App {
+	
+	private File cardsFile;
+    private Deck deck;
+<span class="nc" id="L19">    private List&lt;CharacterCard&gt; characterDeck = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L20">    private List&lt;Player&gt; players = new ArrayList&lt;&gt;();</span>
+    private Computer ComputerLogic; // Don't initialize here
+    private int crownedPlayerIndex;
+<span class="nc" id="L23">    private boolean gameOver = false;</span>
+<span class="fc" id="L24">    public static boolean debugMode = false;</span>
+
+<span class="nc" id="L26">    private Scanner input = new Scanner(System.in);</span>
+
+<span class="nc" id="L28">	public App() {</span>
+    try {
+<span class="nc" id="L30">        InputStream in = getClass().getClassLoader().getResourceAsStream(&quot;cards.tsv&quot;);</span>
+<span class="nc bnc" id="L31" title="All 2 branches missed.">        if (in == null) {</span>
+<span class="nc" id="L32">            System.err.println(&quot;Error: cards.tsv not found.&quot;);</span>
+<span class="nc" id="L33">            return;</span>
+        }
+
+<span class="nc" id="L36">        deck = new Deck();</span>
+<span class="nc" id="L37">        deck.loadFromStream(in);</span>
+<span class="nc" id="L38">        initializeCharacters();</span>
+<span class="nc" id="L39">        setupPlayers();</span>
+
+        // Initialize Computer AFTER deck and players are ready
+<span class="nc" id="L42">        ComputerLogic = new Computer(deck, players);</span>
+
+<span class="nc" id="L44">        System.out.println(&quot;Shuffling deck...&quot;);</span>
+<span class="nc" id="L45">        System.out.println(&quot;Adding characters...&quot;);</span>
+<span class="nc" id="L46">        System.out.println(&quot;Dealing cards...&quot;);</span>
+<span class="nc" id="L47">        System.out.println(&quot;Starting Citadels with &quot; + players.size() + &quot; players...&quot;);</span>
+<span class="nc" id="L48">        System.out.println(&quot;You are player 1&quot;);</span>
+<span class="nc" id="L49">        assignCrown();</span>
+        // deck.showAllCards();
+<span class="nc" id="L51">        dealStartingCards();</span>
+<span class="nc" id="L52">        System.out.println(&quot;Press t to process turns&quot;);</span>
+
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        while (gameOver == false) {</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">            if (checkGameEnd() == true) {</span>
+<span class="nc" id="L56">                gameOver = true;</span>
+<span class="nc" id="L57">                gameEnd();</span>
+            }
+<span class="nc" id="L59">            gameLoop();</span>
+        }
+
+<span class="nc" id="L62">    } catch (Exception e) {</span>
+<span class="nc" id="L63">        throw new RuntimeException(e);</span>
+<span class="nc" id="L64">    }</span>
+<span class="nc" id="L65">}</span>
+
+    private void gameLoop() {
+<span class="nc" id="L68">    System.out.println(&quot;================================&quot;);</span>
+<span class="nc" id="L69">    System.out.println(&quot;SELECTION PHASE&quot;);</span>
+<span class="nc" id="L70">    System.out.println(&quot;================================&quot;);</span>
+<span class="nc" id="L71">    System.out.print(&quot;&gt; &quot;);</span>
+<span class="nc" id="L72">    pressedT();</span>
+
+<span class="nc" id="L74">    boolean validDeck = false;</span>
+<span class="nc" id="L75">    List&lt;CharacterCard&gt; selectionDeck = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L76">    CharacterCard hiddenCard = null;</span>
+<span class="nc" id="L77">    List&lt;CharacterCard&gt; visibleDiscarded = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L79" title="All 2 branches missed.">    while (!validDeck) {</span>
+<span class="nc" id="L80">        selectionDeck = new ArrayList&lt;&gt;(characterDeck);</span>
+<span class="nc" id="L81">        Collections.shuffle(selectionDeck);</span>
+
+<span class="nc" id="L83">        visibleDiscarded.clear();</span>
+<span class="nc" id="L84">        hiddenCard = null;</span>
+
+<span class="nc" id="L86">        int numPlayers = players.size();</span>
+
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        if (numPlayers == 7) {</span>
+            // For 7 players, remove 1 hidden card but save it for the last player
+<span class="nc" id="L90">            hiddenCard = selectionDeck.remove(0);</span>
+<span class="nc" id="L91">            validDeck = true;</span>
+<span class="nc bnc" id="L92" title="All 4 branches missed.">        } else if (numPlayers &gt;= 4 &amp;&amp; numPlayers &lt;= 6) {</span>
+<span class="nc" id="L93">            hiddenCard = selectionDeck.remove(0);</span>
+
+<span class="nc" id="L95">            int faceUpCount = 0;</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">            if (numPlayers == 4) faceUpCount = 2;</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">            if (numPlayers == 5) faceUpCount = 1;</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">            if (numPlayers == 6) faceUpCount = 0;</span>
+
+<span class="nc" id="L100">            boolean kingRemoved = false;</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            for (int i = 0; i &lt; faceUpCount; i++) {</span>
+<span class="nc" id="L102">                CharacterCard removed = selectionDeck.remove(0);</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">                if (removed.getName().equals(&quot;King&quot;)) {</span>
+<span class="nc" id="L104">                    kingRemoved = true;</span>
+<span class="nc" id="L105">                    break;</span>
+                }
+<span class="nc" id="L107">                visibleDiscarded.add(removed);</span>
+            }
+
+<span class="nc bnc" id="L110" title="All 2 branches missed.">            if (!kingRemoved) {</span>
+<span class="nc" id="L111">                validDeck = true;</span>
+            }
+<span class="nc" id="L113">        } else {</span>
+<span class="nc" id="L114">            System.out.println(&quot;Invalid number of players for character selection.&quot;);</span>
+<span class="nc" id="L115">            return;</span>
+        }
+<span class="nc" id="L117">    }</span>
+
+<span class="nc bnc" id="L119" title="All 2 branches missed.">    if (players.size() == 7) {</span>
+<span class="nc" id="L120">        System.out.println(&quot;A mystery character will be offered to the last player.&quot;);</span>
+    } else {
+<span class="nc" id="L122">        System.out.println(&quot;A mystery character was removed.&quot;);</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        for (CharacterCard removed : visibleDiscarded) {</span>
+<span class="nc" id="L124">            System.out.println(removed.getName() + &quot; was removed.&quot;);</span>
+<span class="nc" id="L125">        }</span>
+    }
+
+<span class="nc" id="L128">    List&lt;CharacterCard&gt; draftPool = new ArrayList&lt;&gt;(selectionDeck);</span>
+<span class="nc" id="L129">    List&lt;Player&gt; selectionOrder = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">    for (int i = 0; i &lt; players.size(); i++) {</span>
+<span class="nc" id="L131">        selectionOrder.add(players.get((crownedPlayerIndex + i) % players.size()));</span>
+    }
+
+<span class="nc bnc" id="L134" title="All 2 branches missed.">    if (players.size() == 7) {</span>
+        // Assign to first 6 players
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        for (int i = 0; i &lt; players.size() - 1; i++) {</span>
+<span class="nc" id="L137">            Player player = selectionOrder.get(i);</span>
+<span class="nc" id="L138">            CharacterCard chosen = draftPool.remove(0);</span>
+<span class="nc" id="L139">            player.assignCharacter(chosen);</span>
+<span class="nc" id="L140">            System.out.println(player.getName() + &quot; chose a character.&quot;);</span>
+        }
+
+        // Last player chooses between 1 remaining + hidden card
+<span class="nc" id="L144">        Player lastPlayer = selectionOrder.get(players.size() - 1);</span>
+<span class="nc" id="L145">        CharacterCard card1 = draftPool.remove(0);</span>
+<span class="nc" id="L146">        CharacterCard card2 = hiddenCard;</span>
+
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        if (lastPlayer == players.get(0)) {</span>
+            // Human player chooses
+<span class="nc" id="L150">            System.out.println(&quot;Choose your character:&quot;);</span>
+<span class="nc" id="L151">            System.out.println(&quot;[0] &quot; + card1.getName() + &quot; - &quot; + card1.getAbility());</span>
+<span class="nc" id="L152">            System.out.println(&quot;[1] &quot; + card2.getName() + &quot; - &quot; + card2.getAbility());</span>
+<span class="nc" id="L153">            System.out.print(&quot;Enter 0 or 1: &quot;);</span>
+
+<span class="nc" id="L155">            int choice = -1;</span>
+<span class="nc bnc" id="L156" title="All 4 branches missed.">            while (choice != 0 &amp;&amp; choice != 1) {</span>
+                try {
+<span class="nc" id="L158">                    choice = Integer.parseInt(input.nextLine().trim());</span>
+<span class="nc bnc" id="L159" title="All 4 branches missed.">                    if (choice != 0 &amp;&amp; choice != 1) {</span>
+<span class="nc" id="L160">                        System.out.println(&quot;Invalid choice. Enter 0 or 1:&quot;);</span>
+                    }
+<span class="nc" id="L162">                } catch (NumberFormatException e) {</span>
+<span class="nc" id="L163">                    System.out.println(&quot;Invalid input. Enter a number.&quot;);</span>
+<span class="nc" id="L164">                }</span>
+            }
+
+<span class="nc bnc" id="L167" title="All 2 branches missed.">            CharacterCard chosen = (choice == 0) ? card1 : card2;</span>
+<span class="nc" id="L168">            lastPlayer.assignCharacter(chosen);</span>
+<span class="nc" id="L169">            System.out.println(&quot;You chose: &quot; + chosen.getName());</span>
+<span class="nc" id="L170">        } else {</span>
+            // AI chooses
+<span class="nc bnc" id="L172" title="All 2 branches missed.">            CharacterCard chosen = new Random().nextBoolean() ? card1 : card2;</span>
+<span class="nc" id="L173">            lastPlayer.assignCharacter(chosen);</span>
+<span class="nc" id="L174">            System.out.println(lastPlayer.getName() + &quot; chose a character.&quot;);</span>
+        }
+
+<span class="nc" id="L177">    } else {</span>
+        // All players select normally
+<span class="nc bnc" id="L179" title="All 2 branches missed.">        for (int i = 0; i &lt; selectionOrder.size(); i++) {</span>
+<span class="nc" id="L180">            Player player = selectionOrder.get(i);</span>
+
+<span class="nc bnc" id="L182" title="All 2 branches missed.">            if (player == players.get(0)) {</span>
+                // Human player selects
+<span class="nc" id="L184">                System.out.println(&quot;Available characters:&quot;);</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">                for (int j = 0; j &lt; draftPool.size(); j++) {</span>
+<span class="nc" id="L186">                    CharacterCard c = draftPool.get(j);</span>
+<span class="nc" id="L187">                    System.out.println(&quot;[&quot; + j + &quot;] &quot; + c.getName() + &quot; - &quot; + c.getAbility());</span>
+                }
+<span class="nc" id="L189">                System.out.print(&quot;Choose your character by number: &quot;);</span>
+
+<span class="nc" id="L191">                int choice = -1;</span>
+<span class="nc bnc" id="L192" title="All 4 branches missed.">                while (choice &lt; 0 || choice &gt;= draftPool.size()) {</span>
+                    try {
+<span class="nc" id="L194">                        choice = Integer.parseInt(input.nextLine().trim());</span>
+<span class="nc bnc" id="L195" title="All 4 branches missed.">                        if (choice &lt; 0 || choice &gt;= draftPool.size()) {</span>
+<span class="nc" id="L196">                            System.out.println(&quot;Invalid selection. Try again:&quot;);</span>
+                        }
+<span class="nc" id="L198">                    } catch (NumberFormatException e) {</span>
+<span class="nc" id="L199">                        System.out.println(&quot;Invalid input. Enter a number.&quot;);</span>
+<span class="nc" id="L200">                    }</span>
+                }
+
+<span class="nc" id="L203">                CharacterCard chosen = draftPool.remove(choice);</span>
+<span class="nc" id="L204">                player.assignCharacter(chosen);</span>
+<span class="nc" id="L205">                System.out.println(player.getName() + &quot; chose: &quot; + chosen.getName());</span>
+
+<span class="nc" id="L207">            } else {</span>
+<span class="nc" id="L208">                CharacterCard chosen = draftPool.remove(0);</span>
+<span class="nc" id="L209">                player.assignCharacter(chosen);</span>
+<span class="nc" id="L210">                System.out.println(player.getName() + &quot; chose a character.&quot;);</span>
+            }
+        }
+    }
+
+<span class="nc" id="L215">    turnPhase();</span>
+<span class="nc" id="L216">}</span>
+
+    private void turnPhase() {
+<span class="nc" id="L219">        System.out.println(&quot;&quot;);</span>
+<span class="nc" id="L220">        System.out.println(&quot;================================&quot;);</span>
+<span class="nc" id="L221">        System.out.println(&quot;TURN PHASE&quot;);</span>
+<span class="nc" id="L222">        System.out.println(&quot;================================&quot;);</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        for (int i = 1; i &lt;= 8; i++) {</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">            for (Player player : players) {</span>
+<span class="nc bnc" id="L225" title="All 4 branches missed.">                if (player.getCharacter() != null &amp;&amp; player.getCharacter().getTurnOrder() == i) {</span>
+<span class="nc" id="L226">                    System.out.println(i + &quot;: &quot; + player.getCharacter().getName());</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">                    if (players.indexOf(player) == 0) {</span>
+<span class="nc" id="L228">                        System.out.println(&quot;Your turn.&quot;);</span>
+<span class="nc" id="L229">                        playerTurn(player);</span>
+                    } 
+                    else {
+<span class="nc" id="L232">                        System.out.println(player.getName() + &quot; is the &quot; + player.getCharacter().getName());</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">                            if (App.debugMode == true) {</span>
+<span class="nc" id="L234">                            System.out.println(&quot;[DEBUG] &quot; + player.getName() + &quot;'s hand:&quot;);</span>
+<span class="nc" id="L235">                            List&lt;DistrictCard&gt; hand = player.getHand();</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">                            for (int j = 0; j &lt; hand.size(); j++) {</span>
+<span class="nc" id="L237">                                DistrictCard card = hand.get(j);</span>
+<span class="nc" id="L238">                                System.out.println(&quot;[&quot; + j + &quot;] &quot; + card.getName() + &quot; [&quot; + card.getColor() + &quot;] &quot; + &quot;[&quot; +  card.getCost() + &quot;]&quot;);</span>
+                            }
+<span class="nc" id="L240">                            System.out.println(player.getName() + &quot; has &quot; + player.getGold() + &quot; gold.&quot;);</span>
+                    }
+<span class="nc" id="L242">                    ComputerLogic.takeTurn(player);</span>
+                }
+                }
+<span class="nc" id="L245">            }</span>
+        }
+<span class="nc" id="L247">    }</span>
+
+    private void playerTurn(Player player) {
+        //Passive Abilities
+<span class="nc" id="L251">        String role = player.getCharacter().getName();</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">        switch(role){</span>
+            case &quot;Assassin&quot;:
+<span class="nc" id="L254">                player.getCharacter().useAbility(player, deck, players);</span>
+<span class="nc" id="L255">                UserCommands.abilityCount += 1;</span>
+                break;
+            
+        }
+<span class="nc" id="L259">        System.out.println(&quot;Collect 2 gold or draw two cards and pick one [gold/cards]:&quot;);</span>
+<span class="nc" id="L260">        String inputChoice = &quot;&quot;;</span>
+
+        while (true) {
+<span class="nc" id="L263">            System.out.print(&quot;&gt; &quot;);</span>
+<span class="nc" id="L264">            inputChoice = input.nextLine().trim().toLowerCase();</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">            if (inputChoice.equals(&quot;gold&quot;)) {</span>
+<span class="nc" id="L266">                player.addGold(2);</span>
+<span class="nc" id="L267">                System.out.println(&quot;You received 2 gold.&quot;);</span>
+<span class="nc" id="L268">                break;</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">            } else if (inputChoice.equals(&quot;cards&quot;)) {</span>
+<span class="nc" id="L270">                DistrictCard card1 = deck.draw();</span>
+<span class="nc" id="L271">                DistrictCard card2 = deck.draw();</span>
+                
+<span class="nc bnc" id="L273" title="All 4 branches missed.">                if (card1 == null &amp;&amp; card2 == null) {</span>
+<span class="nc" id="L274">                    System.out.println(&quot;The deck is empty. You receive 2 gold instead.&quot;);</span>
+<span class="nc" id="L275">                    player.addGold(2);</span>
+<span class="nc" id="L276">                    break;</span>
+                }
+
+<span class="nc bnc" id="L279" title="All 4 branches missed.">                if (card1 != null &amp;&amp; card2 != null) {</span>
+<span class="nc" id="L280">                    System.out.println(&quot;Choose a card to keep: [a] &quot; + card1.getName() + &quot; [&quot; + card1.getColor() + &quot;] &quot; + &quot;[&quot; + card1.getCost()</span>
+<span class="nc" id="L281">                    + &quot;]&quot; + &quot; or [b] &quot; + card2.getName() + &quot; [&quot; + card2.getColor() + &quot;] &quot; + &quot;[&quot; + card2.getCost() + &quot;]&quot;);</span>
+<span class="nc" id="L282">                    String choice = &quot;&quot;;</span>
+                    while (true) {
+<span class="nc" id="L284">                        choice = input.nextLine().trim().toLowerCase();</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">                        if (choice.equals(&quot;a&quot;)) {</span>
+<span class="nc" id="L286">                            player.drawCard(card1);</span>
+<span class="nc" id="L287">                            System.out.println(&quot;You chose &quot; +  card1.getName());</span>
+<span class="nc" id="L288">                            break;</span>
+<span class="nc bnc" id="L289" title="All 2 branches missed.">                        } else if (choice.equals(&quot;b&quot;)) {</span>
+<span class="nc" id="L290">                            player.drawCard(card2);</span>
+<span class="nc" id="L291">                            System.out.println(&quot;You chose &quot; + card2.getName());</span>
+<span class="nc" id="L292">                            break;</span>
+                        } else {
+<span class="nc" id="L294">                            System.out.println(&quot;Invalid choice. Please enter 'a' or 'b'.&quot;);</span>
+                        }
+                    }
+<span class="nc" id="L297">                } else {</span>
+                    // Only one card is available
+<span class="nc bnc" id="L299" title="All 2 branches missed.">                    DistrictCard onlyCard = (card1 != null) ? card1 : card2;</span>
+<span class="nc" id="L300">                    System.out.println(&quot;Only one card available. You automatically receive: &quot; + onlyCard.getName());</span>
+<span class="nc" id="L301">                    player.drawCard(onlyCard);</span>
+                }
+
+<span class="nc" id="L304">                break;</span>
+            } else {
+<span class="nc" id="L306">                System.out.println(&quot;Invalid choice. Please type [gold/cards]:&quot;);</span>
+            }
+        }
+
+<span class="nc" id="L310">        UserCommands commandProcessor = new UserCommands(deck, characterDeck, this);</span>
+
+        while (true) {
+<span class="nc" id="L313">            System.out.print(&quot;&gt; &quot;);</span>
+<span class="nc" id="L314">            String[] command = input.nextLine().trim().toLowerCase().split(&quot; &quot;);</span>
+<span class="nc bnc" id="L315" title="All 4 branches missed.">            if (command.length &gt; 0 &amp;&amp; command[0].equals(&quot;end&quot;)) {</span>
+<span class="nc" id="L316">                System.out.println(&quot;You ended your turn.&quot;);</span>
+<span class="nc" id="L317">                crownedPlayerIndex = (crownedPlayerIndex + 1) % players.size();</span>
+<span class="nc" id="L318">                updateCrownAfterRound();</span>
+<span class="nc" id="L319">                return;</span>
+            }
+<span class="nc" id="L321">            commandProcessor.process(player, command, players);</span>
+<span class="nc" id="L322">            System.out.println();</span>
+<span class="nc" id="L323">        }</span>
+    }
+
+    private boolean checkGameEnd(){
+<span class="nc bnc" id="L327" title="All 2 branches missed.">        for(Player player : players){</span>
+<span class="nc bnc" id="L328" title="All 2 branches missed.">            if(player.getBuiltDistricts().size() &gt;= 8){</span>
+<span class="nc" id="L329">                return true;</span>
+            }
+<span class="nc" id="L331">        }</span>
+<span class="nc" id="L332">        return false;</span>
+    }
+
+    private void gameEnd() {
+<span class="nc" id="L336">    System.out.println(&quot;Game over! Final scores:&quot;);</span>
+
+<span class="nc" id="L338">    int highestScore = -1;</span>
+<span class="nc" id="L339">    Player winner = null;</span>
+<span class="nc" id="L340">    int highestRank = -1;</span>
+
+    // Determine first to finish
+<span class="nc" id="L343">    Player firstToFinish = null;</span>
+<span class="nc bnc" id="L344" title="All 2 branches missed.">    for (Player player : players) {</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">        if (player.getBuiltDistricts().size() &gt;= 8) {</span>
+<span class="nc" id="L346">            firstToFinish = player;</span>
+<span class="nc" id="L347">            break;</span>
+        }
+<span class="nc" id="L349">    }</span>
+
+<span class="nc bnc" id="L351" title="All 2 branches missed.">    for (Player player : players) {</span>
+<span class="nc bnc" id="L352" title="All 2 branches missed.">        boolean isFirstToFinish = (player == firstToFinish);</span>
+<span class="nc" id="L353">        int score = calculateScore(players, player, isFirstToFinish);</span>
+
+<span class="nc" id="L355">        String characterName = &quot;&quot;;</span>
+<span class="nc" id="L356">        int rank = -1;</span>
+<span class="nc bnc" id="L357" title="All 2 branches missed.">        if (player.getCharacter() != null) {</span>
+<span class="nc" id="L358">            characterName = &quot; - &quot; + player.getCharacter().getName();</span>
+<span class="nc" id="L359">            rank = player.getCharacter().getTurnOrder();</span>
+        }
+
+<span class="nc" id="L362">        System.out.println(player.getName() + characterName + &quot; scored &quot; + score + &quot; points.&quot;);</span>
+
+<span class="nc bnc" id="L364" title="All 6 branches missed.">        if (score &gt; highestScore || (score == highestScore &amp;&amp; rank &gt; highestRank)) {</span>
+<span class="nc" id="L365">            highestScore = score;</span>
+<span class="nc" id="L366">            highestRank = rank;</span>
+<span class="nc" id="L367">            winner = player;</span>
+        }
+<span class="nc" id="L369">    }</span>
+
+<span class="nc bnc" id="L371" title="All 2 branches missed.">    if (winner != null) {</span>
+<span class="nc" id="L372">        System.out.println(&quot;The winner is: &quot; + winner.getName() + &quot; with &quot; + highestScore + &quot; points!&quot;);</span>
+    }
+<span class="nc" id="L374">}</span>
+
+    public static int calculateScore(List&lt;Player&gt; players, Player player, boolean isFirstToFinish) {
+<span class="fc" id="L377">    int score = 0;</span>
+
+    // 1. Base score = sum of building costs
+<span class="fc bfc" id="L380" title="All 2 branches covered.">    for (DistrictCard card : player.getBuiltDistricts()) {</span>
+<span class="fc" id="L381">        score += card.getCost();</span>
+<span class="fc" id="L382">    }</span>
+
+    // 2. Bonus for having all district types
+<span class="fc" id="L385">    Set&lt;String&gt; colors = new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L386" title="All 2 branches covered.">    for (DistrictCard card : player.getBuiltDistricts()) {</span>
+<span class="fc" id="L387">        colors.add(card.getColor().toLowerCase());</span>
+<span class="fc" id="L388">    }</span>
+<span class="pc bpc" id="L389" title="4 of 10 branches missed.">    if (colors.contains(&quot;red&quot;) &amp;&amp; colors.contains(&quot;blue&quot;) &amp;&amp; colors.contains(&quot;green&quot;) &amp;&amp; colors.contains(&quot;yellow&quot;) &amp;&amp; colors.contains(&quot;purple&quot;)) {</span>
+<span class="fc" id="L390">        score += 3;</span>
+    }
+
+    // 3. Bonus for city completion
+<span class="pc bpc" id="L394" title="1 of 2 branches missed.">    if (player.getBuiltDistricts().size() &gt;= 8) {</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">        if (isFirstToFinish) {</span>
+<span class="nc" id="L396">            score += 4;</span>
+        } else {
+<span class="nc" id="L398">            score += 2;</span>
+        }
+    }
+
+    // 4. Extra points from special purple districts
+<span class="fc bfc" id="L403" title="All 2 branches covered.">    for (DistrictCard card : player.getBuiltDistricts()) {</span>
+<span class="fc" id="L404">        String name = card.getName();</span>
+<span class="pc bpc" id="L405" title="1 of 4 branches missed.">        if (name.equals(&quot;University&quot;) || name.equals(&quot;Dragon Gate&quot;)) {</span>
+<span class="fc" id="L406">            score += 2; // each worth 8 points but base is 6 → +2</span>
+<span class="pc bpc" id="L407" title="1 of 2 branches missed.">        } else if (name.equals(&quot;Museum&quot;)) {</span>
+            // Placeholder: assume 1 card under Museum = 1 point
+<span class="nc" id="L409">            score += 1;</span>
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">        } else if (name.equals(&quot;Imperial Treasury&quot;)) {</span>
+<span class="nc" id="L411">            score += player.getGold();</span>
+<span class="pc bpc" id="L412" title="1 of 2 branches missed.">        } else if (name.equals(&quot;Map Room&quot;)) {</span>
+<span class="nc" id="L413">            score += player.getHand().size();</span>
+<span class="fc bfc" id="L414" title="All 2 branches covered.">        } else if (name.equals(&quot;Wishing Well&quot;)) {</span>
+<span class="fc" id="L415">            int purpleCount = 0;</span>
+<span class="fc bfc" id="L416" title="All 2 branches covered.">            for (DistrictCard d : player.getBuiltDistricts()) {</span>
+<span class="fc bfc" id="L417" title="All 4 branches covered.">                if (!d.getName().equals(name) &amp;&amp; d.getColor().equalsIgnoreCase(&quot;purple&quot;)) {</span>
+<span class="fc" id="L418">                    purpleCount++;</span>
+                }
+<span class="fc" id="L420">            }</span>
+<span class="fc" id="L421">            score += purpleCount;</span>
+<span class="pc bpc" id="L422" title="1 of 2 branches missed.">        } else if (name.equals(&quot;Poor House&quot;)) {</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">            if (player.getGold() == 0) {</span>
+<span class="nc" id="L424">                score += 1;</span>
+            }
+<span class="pc bpc" id="L426" title="1 of 2 branches missed.">        } else if (name.equals(&quot;Park&quot;)) {</span>
+<span class="nc bnc" id="L427" title="All 2 branches missed.">            if (player.getHand().size() == 0) {</span>
+<span class="nc" id="L428">                score += 2;</span>
+            }
+        }
+<span class="fc" id="L431">    }</span>
+
+<span class="fc" id="L433">    return score;</span>
+}
+
+
+
+    private void initializeCharacters() {
+<span class="nc" id="L439">        characterDeck.add(new CharacterCard(&quot;Assassin&quot;, 1, &quot;Kill a character&quot;));</span>
+<span class="nc" id="L440">        characterDeck.add(new CharacterCard(&quot;Thief&quot;, 2, &quot;Steal gold from a character&quot;));</span>
+<span class="nc" id="L441">        characterDeck.add(new CharacterCard(&quot;Magician&quot;, 3, &quot;Swap hand or redraw&quot;));</span>
+<span class="nc" id="L442">        characterDeck.add(new CharacterCard(&quot;King&quot;, 4, &quot;Gain gold for yellow, get crown&quot;));</span>
+<span class="nc" id="L443">        characterDeck.add(new CharacterCard(&quot;Bishop&quot;, 5, &quot;Gain gold for blue, buildings immune to Warlord&quot;));</span>
+<span class="nc" id="L444">        characterDeck.add(new CharacterCard(&quot;Merchant&quot;, 6, &quot;Gain gold for green, +1 gold&quot;));</span>
+<span class="nc" id="L445">        characterDeck.add(new CharacterCard(&quot;Architect&quot;, 7, &quot;Draw 2 extra cards, build up to 3&quot;));</span>
+<span class="nc" id="L446">        characterDeck.add(new CharacterCard(&quot;Warlord&quot;, 8, &quot;Gain gold for red, destroy buildings&quot;));</span>
+<span class="nc" id="L447">    }</span>
+
+    private void setupPlayers() {
+<span class="nc" id="L450">        int numPlayers = 0;</span>
+<span class="nc" id="L451">        Scanner scanner = new Scanner(System.in);</span>
+
+        while (true) {
+<span class="nc" id="L454">            System.out.print(&quot;Enter how many players [4-7]: &quot;);</span>
+<span class="nc" id="L455">            String input = scanner.nextLine().trim();</span>
+
+            try {
+<span class="nc" id="L458">                numPlayers = Integer.parseInt(input);</span>
+<span class="nc bnc" id="L459" title="All 4 branches missed.">                if (numPlayers &gt;= 4 &amp;&amp; numPlayers &lt;= 7) {</span>
+<span class="nc" id="L460">                    break;</span>
+                } else {
+<span class="nc" id="L462">                    System.out.println(&quot;Number of players must be between 4-7&quot;);</span>
+                }
+<span class="nc" id="L464">            } catch (NumberFormatException e) {</span>
+<span class="nc" id="L465">                System.out.println(&quot;A number between 4-7 must be entered&quot;);</span>
+<span class="nc" id="L466">            }</span>
+<span class="nc" id="L467">    }</span>
+
+<span class="nc bnc" id="L469" title="All 2 branches missed.">        for (int i = 1; i &lt;= numPlayers; i++) {</span>
+<span class="nc" id="L470">            players.add(new Player(&quot;Player &quot; + i));</span>
+        }
+<span class="nc" id="L472">    }</span>
+    private void assignCrown() {
+<span class="nc" id="L474">        crownedPlayerIndex = new Random().nextInt(players.size());</span>
+<span class="nc" id="L475">        System.out.println(players.get(crownedPlayerIndex).getName() + &quot; is the crowned player and goes first.&quot;);</span>
+<span class="nc" id="L476">    }</span>
+
+    private void updateCrownAfterRound() {
+<span class="nc bnc" id="L479" title="All 2 branches missed.">    for (int i = 0; i &lt; players.size(); i++) {</span>
+<span class="nc" id="L480">        Player player = players.get(i);</span>
+<span class="nc bnc" id="L481" title="All 2 branches missed.">        if (player.receiveCrown() == true) {</span>
+<span class="nc" id="L482">            crownedPlayerIndex = i;</span>
+<span class="nc" id="L483">            System.out.println(player.getName() + &quot; receives the crown for the next round.&quot;);</span>
+        }
+<span class="nc" id="L485">        player.setReceiveCrown(false);</span>
+        
+    }
+<span class="nc" id="L488">}</span>
+
+    private void dealStartingCards() {
+<span class="nc bnc" id="L491" title="All 2 branches missed.">        for (Player player : players) {</span>
+<span class="nc bnc" id="L492" title="All 2 branches missed.">            for (int i = 0; i &lt; 4; i++) {</span>
+<span class="nc" id="L493">                player.drawCard(deck.draw());</span>
+            }
+<span class="nc" id="L495">        }</span>
+<span class="nc" id="L496">    }</span>
+    
+    private void pressedT() {
+        while (true) {
+<span class="nc" id="L500">            String uInput = input.nextLine().trim();</span>
+<span class="nc bnc" id="L501" title="All 2 branches missed.">            if(uInput.toLowerCase().equals(&quot;t&quot;)){</span>
+<span class="nc" id="L502">                return;</span>
+            }
+            else{
+<span class="nc" id="L505">                System.out.println(&quot;It is not your turn. Press t to continue.&quot;);</span>
+            } 
+            
+<span class="nc" id="L508">        }</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public void saveGame(String filename) {
+<span class="nc" id="L513">    JSONObject root = new JSONObject();</span>
+
+    // Save each player
+<span class="nc" id="L516">    JSONArray playerArray = new JSONArray();</span>
+<span class="nc bnc" id="L517" title="All 2 branches missed.">    for (Player p : players) {</span>
+<span class="nc" id="L518">        JSONObject obj = new JSONObject();</span>
+<span class="nc" id="L519">        obj.put(&quot;name&quot;, p.getName());</span>
+<span class="nc" id="L520">        obj.put(&quot;gold&quot;, p.getGold());</span>
+<span class="nc bnc" id="L521" title="All 2 branches missed.">        obj.put(&quot;character&quot;, p.getCharacter() != null ? p.getCharacter().getName() : null);</span>
+
+<span class="nc" id="L523">        JSONArray hand = new JSONArray();</span>
+<span class="nc bnc" id="L524" title="All 2 branches missed.">        for (DistrictCard c : p.getHand()) {</span>
+<span class="nc" id="L525">            JSONObject card = new JSONObject();</span>
+<span class="nc" id="L526">            card.put(&quot;name&quot;, c.getName());</span>
+<span class="nc" id="L527">            card.put(&quot;color&quot;, c.getColor());</span>
+<span class="nc" id="L528">            card.put(&quot;cost&quot;, c.getCost());</span>
+<span class="nc" id="L529">            card.put(&quot;text&quot;, c.getDescription());</span>
+<span class="nc" id="L530">            hand.add(card);</span>
+<span class="nc" id="L531">        }</span>
+
+<span class="nc" id="L533">        JSONArray built = new JSONArray();</span>
+<span class="nc bnc" id="L534" title="All 2 branches missed.">        for (DistrictCard c : p.getBuiltDistricts()) {</span>
+<span class="nc" id="L535">            JSONObject card = new JSONObject();</span>
+<span class="nc" id="L536">            card.put(&quot;name&quot;, c.getName());</span>
+<span class="nc" id="L537">            card.put(&quot;color&quot;, c.getColor());</span>
+<span class="nc" id="L538">            card.put(&quot;cost&quot;, c.getCost());</span>
+<span class="nc" id="L539">            card.put(&quot;text&quot;, c.getDescription());</span>
+<span class="nc" id="L540">            built.add(card);</span>
+<span class="nc" id="L541">        }</span>
+
+<span class="nc" id="L543">        obj.put(&quot;hand&quot;, hand);</span>
+<span class="nc" id="L544">        obj.put(&quot;builtDistricts&quot;, built);</span>
+<span class="nc" id="L545">        playerArray.add(obj);</span>
+<span class="nc" id="L546">    }</span>
+
+<span class="nc" id="L548">    root.put(&quot;players&quot;, playerArray);</span>
+<span class="nc" id="L549">    root.put(&quot;crownedPlayerIndex&quot;, crownedPlayerIndex);</span>
+
+<span class="nc" id="L551">    try (FileWriter fw = new FileWriter(filename)) {</span>
+<span class="nc" id="L552">        fw.write(root.toJSONString());</span>
+<span class="nc" id="L553">        System.out.println(&quot;Game saved to &quot; + filename);</span>
+<span class="nc" id="L554">    } catch (IOException e) {</span>
+<span class="nc" id="L555">        System.err.println(&quot;Error saving game: &quot; + e.getMessage());</span>
+<span class="nc" id="L556">    }</span>
+<span class="nc" id="L557">}</span>
+
+public void loadGame(String filename) {
+    try {
+<span class="nc" id="L561">        JSONParser parser = new JSONParser();</span>
+<span class="nc" id="L562">        JSONObject root = (JSONObject) parser.parse(new FileReader(filename));</span>
+
+<span class="nc" id="L564">        players.clear();</span>
+
+<span class="nc" id="L566">        JSONArray playerArray = (JSONArray) root.get(&quot;players&quot;);</span>
+<span class="nc bnc" id="L567" title="All 2 branches missed.">        for (Object o : playerArray) {</span>
+<span class="nc" id="L568">            JSONObject obj = (JSONObject) o;</span>
+<span class="nc" id="L569">            Player p = new Player((String) obj.get(&quot;name&quot;));</span>
+<span class="nc" id="L570">            p.addGold(((Long) obj.get(&quot;gold&quot;)).intValue() - 2); // Start from 2 gold</span>
+
+<span class="nc" id="L572">            String characterName = (String) obj.get(&quot;character&quot;);</span>
+<span class="nc bnc" id="L573" title="All 2 branches missed.">            if (characterName != null) {</span>
+<span class="nc bnc" id="L574" title="All 2 branches missed.">                for (CharacterCard c : CharacterCard.getCharacters()) {</span>
+<span class="nc bnc" id="L575" title="All 2 branches missed.">                    if (c.getName().equals(characterName)) {</span>
+<span class="nc" id="L576">                        p.assignCharacter(c);</span>
+<span class="nc" id="L577">                        break;</span>
+                    }
+<span class="nc" id="L579">                }</span>
+            }
+
+<span class="nc" id="L582">            JSONArray hand = (JSONArray) obj.get(&quot;hand&quot;);</span>
+<span class="nc bnc" id="L583" title="All 2 branches missed.">            for (Object hc : hand) {</span>
+<span class="nc" id="L584">                JSONObject card = (JSONObject) hc;</span>
+<span class="nc" id="L585">                p.drawCard(new DistrictCard(</span>
+<span class="nc" id="L586">                    (String) card.get(&quot;name&quot;),</span>
+<span class="nc" id="L587">                    (String) card.get(&quot;color&quot;),</span>
+<span class="nc" id="L588">                    ((Long) card.get(&quot;cost&quot;)).intValue(),</span>
+<span class="nc" id="L589">                    (String) card.get(&quot;description&quot;)</span>
+                ));
+<span class="nc" id="L591">            }</span>
+
+<span class="nc" id="L593">            JSONArray built = (JSONArray) obj.get(&quot;builtDistricts&quot;);</span>
+<span class="nc bnc" id="L594" title="All 2 branches missed.">            for (Object bc : built) {</span>
+<span class="nc" id="L595">                JSONObject card = (JSONObject) bc;</span>
+<span class="nc" id="L596">                p.getBuiltDistricts().add(new DistrictCard(</span>
+<span class="nc" id="L597">                    (String) card.get(&quot;name&quot;),</span>
+<span class="nc" id="L598">                    (String) card.get(&quot;color&quot;),</span>
+<span class="nc" id="L599">                    ((Long) card.get(&quot;cost&quot;)).intValue(),</span>
+<span class="nc" id="L600">                    (String) card.get(&quot;description&quot;)</span>
+                ));
+<span class="nc" id="L602">            }</span>
+
+<span class="nc" id="L604">            players.add(p);</span>
+<span class="nc" id="L605">        }</span>
+
+<span class="nc" id="L607">        crownedPlayerIndex = ((Long) root.get(&quot;crownedPlayerIndex&quot;)).intValue();</span>
+
+<span class="nc" id="L609">        System.out.println(&quot;Game loaded from &quot; + filename);</span>
+<span class="nc" id="L610">        resumeGame();</span>
+<span class="nc" id="L611">    } catch (Exception e) {</span>
+<span class="nc" id="L612">        System.err.println(&quot;Failed to load game: &quot; + e.getMessage());</span>
+<span class="nc" id="L613">    }</span>
+<span class="nc" id="L614">}</span>
+
+public void resumeGame() {
+<span class="nc" id="L617">    System.out.println(&quot;Game loaded. Resuming...&quot;);</span>
+<span class="nc" id="L618">    System.out.println(&quot;You are player 1&quot;);</span>
+<span class="nc" id="L619">    System.out.println(players.get(crownedPlayerIndex).getName() + &quot; is the crowned player and goes first.&quot;);</span>
+<span class="nc" id="L620">    System.out.println(&quot;Press t to process turns&quot;);</span>
+<span class="nc bnc" id="L621" title="All 2 branches missed.">    while (!gameOver) {</span>
+<span class="nc" id="L622">        gameLoop();</span>
+    }
+<span class="nc" id="L624">}</span>
+
+    public static void main(String[] args) {
+<span class="nc" id="L627">        App app = new App();</span>
+<span class="nc" id="L628">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

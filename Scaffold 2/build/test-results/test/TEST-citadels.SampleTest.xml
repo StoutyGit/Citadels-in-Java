@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="citadels.SampleTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2025-05-23T10:49:11.600Z" hostname="LinuxMint" time="0.024">
+<testsuite name="citadels.SampleTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2025-05-26T03:52:08.086Z" hostname="LinuxMint" time="0.023">
   <properties/>
-  <testcase name="simpleTest()" classname="citadels.SampleTest" time="0.024"/>
+  <testcase name="simpleTest()" classname="citadels.SampleTest" time="0.023"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

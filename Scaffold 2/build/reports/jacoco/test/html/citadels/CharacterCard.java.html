@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CharacterCard.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Scaffold 2</a> &gt; <a href="index.source.html" class="el_package">citadels</a> &gt; <span class="el_source">CharacterCard.java</span></div><h1>CharacterCard.java</h1><pre class="source lang-java linenums">package citadels;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class CharacterCard extends Card{
+    private int turnOrder;
+    private String ability;
+
+    public CharacterCard(String name, int turnOrder, String ability) {
+<span class="nc" id="L11">        super(name);</span>
+<span class="nc" id="L12">        this.turnOrder = turnOrder;</span>
+<span class="nc" id="L13">        this.ability = ability;</span>
+<span class="nc" id="L14">    }</span>
+
+    public static List&lt;CharacterCard&gt; getCharacters() {
+<span class="nc" id="L17">    List&lt;CharacterCard&gt; characters = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L18">    characters.add(new CharacterCard(&quot;Assassin&quot;, 1, &quot;Kill a character.&quot;));</span>
+<span class="nc" id="L19">    characters.add(new CharacterCard(&quot;Thief&quot;, 2, &quot;Steal gold from a character.&quot;));</span>
+<span class="nc" id="L20">    characters.add(new CharacterCard(&quot;Magician&quot;, 3, &quot;Swap hand or redraw.&quot;));</span>
+<span class="nc" id="L21">    characters.add(new CharacterCard(&quot;King&quot;, 4, &quot;Gain gold for yellow, get crown.&quot;));</span>
+<span class="nc" id="L22">    characters.add(new CharacterCard(&quot;Bishop&quot;, 5, &quot;Gain gold for blue, immune to Warlord.&quot;));</span>
+<span class="nc" id="L23">    characters.add(new CharacterCard(&quot;Merchant&quot;, 6, &quot;Gain gold for green, +1 gold.&quot;));</span>
+<span class="nc" id="L24">    characters.add(new CharacterCard(&quot;Architect&quot;, 7, &quot;Draw 2 extra cards, build up to 3.&quot;));</span>
+<span class="nc" id="L25">    characters.add(new CharacterCard(&quot;Warlord&quot;, 8, &quot;Gain gold for red, destroy buildings.&quot;));</span>
+<span class="nc" id="L26">    return characters;</span>
+}
+
+    public int getTurnOrder() {
+<span class="nc" id="L30">        return turnOrder;</span>
+    }
+
+    public String getAbility() {
+<span class="nc" id="L34">        return ability;</span>
+    }
+
+    public void useAbility(Player player, Deck deck, java.util.List&lt;Player&gt; players) {
+<span class="nc" id="L38">    String role = getName();</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">    boolean isHumanPlayer = players.indexOf(player) == 0; // Assuming human is always Player 1</span>
+
+<span class="nc bnc" id="L41" title="All 9 branches missed.">    switch (role) {</span>
+        case &quot;Architect&quot;:
+<span class="nc" id="L43">            System.out.println(&quot;[ACTION] &quot; + player.getName() + &quot; (Architect) draws 2 extra cards.&quot;);</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">            for (int i = 0; i &lt; 2; i++) {</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">                if (!deck.isEmpty()) {</span>
+<span class="nc" id="L46">                    DistrictCard card = deck.draw();</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">                    if (card != null) {</span>
+<span class="nc" id="L48">                        player.drawCard(card);</span>
+                    } else {
+<span class="nc" id="L50">                        System.out.println(&quot;Deck is empty, cannot draw more cards.&quot;);</span>
+<span class="nc" id="L51">                        break;</span>
+                    }
+                }
+            }
+<span class="nc" id="L55">            break;</span>
+
+        case &quot;Merchant&quot;:
+<span class="nc" id="L58">            System.out.println(&quot;[ACTION] &quot; + player.getName() + &quot; (Merchant) receives 1 extra gold.&quot;);</span>
+<span class="nc" id="L59">            player.addGold(1);</span>
+<span class="nc" id="L60">            break;</span>
+
+        case &quot;King&quot;:
+<span class="nc" id="L63">            System.out.println(&quot;[ACTION] &quot; + player.getName() + &quot; (King) gains 1 gold per yellow district.&quot;);</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">            for (DistrictCard district : player.getBuiltDistricts()) {</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">                if (district.getColor().equalsIgnoreCase(&quot;yellow&quot;)) {</span>
+<span class="nc" id="L66">                    player.addGold(1);</span>
+                }
+<span class="nc" id="L68">            }</span>
+<span class="nc" id="L69">            System.out.println(player.getName() + &quot; will receive the crown next round.&quot;);</span>
+<span class="nc" id="L70">            player.setReceiveCrown(true);</span>
+<span class="nc" id="L71">            break;</span>
+
+        case &quot;Bishop&quot;:
+<span class="nc" id="L74">            System.out.println(&quot;[ACTION] &quot; + player.getName() + &quot; (Bishop) gains 1 gold per blue district.&quot;);</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">            for (DistrictCard d : player.getBuiltDistricts()) {</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">                if (d.getColor().equalsIgnoreCase(&quot;blue&quot;)) {</span>
+<span class="nc" id="L77">                    player.addGold(1);</span>
+                }
+<span class="nc" id="L79">            }</span>
+<span class="nc" id="L80">            System.out.println(&quot;[ACTION] &quot; + player.getName() + &quot; (Bishop) is immune to the Warlord.&quot;);</span>
+<span class="nc" id="L81">            break;</span>
+
+        case &quot;Magician&quot;:
+<span class="nc" id="L84">            System.out.println(&quot;[ACTION] &quot; + player.getName() + &quot; (Magician) redraws hand.&quot;);</span>
+<span class="nc" id="L85">            List&lt;DistrictCard&gt; oldHand = new ArrayList&lt;&gt;(player.getHand());</span>
+<span class="nc" id="L86">            List&lt;DistrictCard&gt; newHand = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            for (int i = 0; i &lt; oldHand.size(); i++) {</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">                if (!deck.isEmpty()) {</span>
+<span class="nc" id="L90">                    DistrictCard newCard = deck.draw();</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">                    if (newCard != null) {</span>
+<span class="nc" id="L92">                        newHand.add(newCard);</span>
+                    } else {
+<span class="nc" id="L94">                        System.out.println(&quot;Deck is empty, cannot redraw remaining cards.&quot;);</span>
+<span class="nc" id="L95">                        break;</span>
+                    }
+                }
+            }
+<span class="nc" id="L99">            player.getHand().clear();</span>
+<span class="nc" id="L100">            player.getHand().addAll(newHand);</span>
+<span class="nc" id="L101">            break;</span>
+
+        case &quot;Warlord&quot;:
+<span class="nc" id="L104">            System.out.println(&quot;[ACTION] &quot; + player.getName() + &quot; (Warlord) gains 1 gold per red district.&quot;);</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">            for (DistrictCard d : player.getBuiltDistricts()) {</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">                if (d.getColor().equalsIgnoreCase(&quot;red&quot;)) {</span>
+<span class="nc" id="L107">                    player.addGold(1);</span>
+                }
+<span class="nc" id="L109">            }</span>
+            
+            // Destroy building logic
+<span class="nc" id="L112">            List&lt;Player&gt; validTargets = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L113">            List&lt;DistrictCard&gt; validBuildings = new ArrayList&lt;&gt;();</span>
+            
+<span class="nc bnc" id="L115" title="All 2 branches missed.">            for (Player target : players) {</span>
+<span class="nc bnc" id="L116" title="All 6 branches missed.">                if (target != player &amp;&amp; target.getBuiltDistricts().size() &gt; 0 &amp;&amp; target.getBuiltDistricts().size() &lt; 8) {</span>
+                    // Check if target is not Bishop (immune to Warlord)
+<span class="nc bnc" id="L118" title="All 4 branches missed.">                    if (target.getCharacter() == null || !target.getCharacter().getName().equals(&quot;Bishop&quot;)) {</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">                        for (DistrictCard d : target.getBuiltDistricts()) {</span>
+<span class="nc" id="L120">                            int cost = d.getCost() - 1;</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">                            if (player.getGold() &gt;= cost) {</span>
+<span class="nc" id="L122">                                validTargets.add(target);</span>
+<span class="nc" id="L123">                                validBuildings.add(d);</span>
+                            }
+<span class="nc" id="L125">                        }</span>
+                    }
+                }
+<span class="nc" id="L128">            }</span>
+            
+<span class="nc bnc" id="L130" title="All 2 branches missed.">            if (validTargets.isEmpty()) {</span>
+<span class="nc" id="L131">                System.out.println(player.getName() + &quot; cannot destroy any buildings (insufficient gold or no valid targets).&quot;);</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">            } else if (isHumanPlayer) {</span>
+                // Human player chooses
+<span class="nc" id="L134">                System.out.println(&quot;Choose a building to destroy:&quot;);</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">                for (int i = 0; i &lt; validBuildings.size(); i++) {</span>
+<span class="nc" id="L136">                    DistrictCard building = validBuildings.get(i);</span>
+<span class="nc" id="L137">                    Player owner = validTargets.get(i);</span>
+<span class="nc" id="L138">                    int cost = building.getCost() - 1;</span>
+<span class="nc" id="L139">                    System.out.println(&quot;[&quot; + i + &quot;] &quot; + building.getName() + &quot; owned by &quot; + owner.getName() + &quot; (Cost: &quot; + cost + &quot; gold)&quot;);</span>
+                }
+                
+<span class="nc" id="L142">                java.util.Scanner scanner = new java.util.Scanner(System.in);</span>
+<span class="nc" id="L143">                int choice = -1;</span>
+<span class="nc bnc" id="L144" title="All 4 branches missed.">                while (choice &lt; 0 || choice &gt;= validBuildings.size()) {</span>
+                    try {
+<span class="nc" id="L146">                        System.out.print(&quot;Enter choice: &quot;);</span>
+<span class="nc" id="L147">                        choice = Integer.parseInt(scanner.nextLine().trim());</span>
+<span class="nc bnc" id="L148" title="All 4 branches missed.">                        if (choice &lt; 0 || choice &gt;= validBuildings.size()) {</span>
+<span class="nc" id="L149">                            System.out.println(&quot;Invalid selection. Try again:&quot;);</span>
+                        }
+<span class="nc" id="L151">                    } catch (NumberFormatException e) {</span>
+<span class="nc" id="L152">                        System.out.println(&quot;Invalid input. Enter a number.&quot;);</span>
+<span class="nc" id="L153">                    }</span>
+                }
+                
+<span class="nc" id="L156">                DistrictCard toDestroy = validBuildings.get(choice);</span>
+<span class="nc" id="L157">                Player targetPlayer = validTargets.get(choice);</span>
+<span class="nc" id="L158">                int cost = toDestroy.getCost() - 1;</span>
+                
+<span class="nc" id="L160">                player.spendGold(cost);</span>
+<span class="nc" id="L161">                targetPlayer.getBuiltDistricts().remove(toDestroy);</span>
+<span class="nc" id="L162">                System.out.println(player.getName() + &quot; destroyed &quot; + toDestroy.getName() + &quot; in &quot; + targetPlayer.getName() + &quot;'s city for &quot; + cost + &quot; gold.&quot;);</span>
+                
+<span class="nc" id="L164">            } else {</span>
+                // Computer chooses randomly
+<span class="nc" id="L166">                int randomIndex = new java.util.Random().nextInt(validBuildings.size());</span>
+<span class="nc" id="L167">                DistrictCard toDestroy = validBuildings.get(randomIndex);</span>
+<span class="nc" id="L168">                Player targetPlayer = validTargets.get(randomIndex);</span>
+<span class="nc" id="L169">                int cost = toDestroy.getCost() - 1;</span>
+                
+<span class="nc" id="L171">                player.spendGold(cost);</span>
+<span class="nc" id="L172">                targetPlayer.getBuiltDistricts().remove(toDestroy);</span>
+<span class="nc" id="L173">                System.out.println(player.getName() + &quot; destroyed &quot; + toDestroy.getName() + &quot; in &quot; + targetPlayer.getName() + &quot;'s city for &quot; + cost + &quot; gold.&quot;);</span>
+            }
+<span class="nc" id="L175">            break;</span>
+
+        case &quot;Thief&quot;:
+<span class="nc" id="L178">            System.out.println(&quot;[ACTION] &quot; + player.getName() + &quot; (Thief) picks a target to rob.&quot;);</span>
+            
+            // Get list of characters that can be robbed (not Assassin, and not self)
+<span class="nc" id="L181">            List&lt;String&gt; availableTargets = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L182">            List&lt;Player&gt; targetPlayers = new ArrayList&lt;&gt;();</span>
+            
+<span class="nc bnc" id="L184" title="All 2 branches missed.">            for (Player p : players) {</span>
+<span class="nc bnc" id="L185" title="All 4 branches missed.">                if (p != player &amp;&amp; p.getCharacter() != null &amp;&amp; </span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">                    !p.getCharacter().getName().equals(&quot;Assassin&quot;) &amp;&amp;</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">                    !p.getCharacter().getName().equals(&quot;Thief&quot;)) {</span>
+<span class="nc" id="L188">                    availableTargets.add(p.getCharacter().getName());</span>
+<span class="nc" id="L189">                    targetPlayers.add(p);</span>
+                }
+<span class="nc" id="L191">            }</span>
+            
+<span class="nc bnc" id="L193" title="All 2 branches missed.">            if (availableTargets.isEmpty()) {</span>
+<span class="nc" id="L194">                System.out.println(&quot;No valid targets to rob.&quot;);</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">            } else if (isHumanPlayer) {</span>
+                // Human player chooses
+<span class="nc" id="L197">                System.out.println(&quot;Choose a character to rob:&quot;);</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">                for (int i = 0; i &lt; availableTargets.size(); i++) {</span>
+<span class="nc" id="L199">                    System.out.println(&quot;[&quot; + i + &quot;] &quot; + availableTargets.get(i));</span>
+                }
+                
+<span class="nc" id="L202">                java.util.Scanner scanner = new java.util.Scanner(System.in);</span>
+<span class="nc" id="L203">                int choice = -1;</span>
+<span class="nc bnc" id="L204" title="All 4 branches missed.">                while (choice &lt; 0 || choice &gt;= availableTargets.size()) {</span>
+                    try {
+<span class="nc" id="L206">                        System.out.print(&quot;Enter choice: &quot;);</span>
+<span class="nc" id="L207">                        choice = Integer.parseInt(scanner.nextLine().trim());</span>
+<span class="nc bnc" id="L208" title="All 4 branches missed.">                        if (choice &lt; 0 || choice &gt;= availableTargets.size()) {</span>
+<span class="nc" id="L209">                            System.out.println(&quot;Invalid selection. Try again:&quot;);</span>
+                        }
+<span class="nc" id="L211">                    } catch (NumberFormatException e) {</span>
+<span class="nc" id="L212">                        System.out.println(&quot;Invalid input. Enter a number.&quot;);</span>
+<span class="nc" id="L213">                    }</span>
+                }
+                
+<span class="nc" id="L216">                Player targetPlayer = targetPlayers.get(choice);</span>
+<span class="nc" id="L217">                String targetCharacter = availableTargets.get(choice);</span>
+<span class="nc" id="L218">                int stolenGold = targetPlayer.getGold();</span>
+<span class="nc" id="L219">                targetPlayer.spendGold(stolenGold);</span>
+<span class="nc" id="L220">                player.addGold(stolenGold);</span>
+<span class="nc" id="L221">                System.out.println(player.getName() + &quot; steals &quot; + stolenGold + &quot; gold from the &quot; + targetCharacter + &quot; (&quot; + targetPlayer.getName() + &quot;).&quot;);</span>
+                
+<span class="nc" id="L223">            } else {</span>
+                // Computer chooses randomly
+<span class="nc" id="L225">                int randomIndex = new java.util.Random().nextInt(availableTargets.size());</span>
+<span class="nc" id="L226">                Player targetPlayer = targetPlayers.get(randomIndex);</span>
+<span class="nc" id="L227">                String targetCharacter = availableTargets.get(randomIndex);</span>
+<span class="nc" id="L228">                int stolenGold = targetPlayer.getGold();</span>
+<span class="nc" id="L229">                targetPlayer.spendGold(stolenGold);</span>
+<span class="nc" id="L230">                player.addGold(stolenGold);</span>
+<span class="nc" id="L231">                System.out.println(player.getName() + &quot; steals &quot; + stolenGold + &quot; gold from the &quot; + targetCharacter + &quot; (&quot; + targetPlayer.getName() + &quot;).&quot;);</span>
+            }
+<span class="nc" id="L233">            break;</span>
+            
+        case &quot;Assassin&quot;:
+<span class="nc" id="L236">            System.out.println(&quot;[ACTION] &quot; + player.getName() + &quot; (Assassin) picks a character to kill.&quot;);</span>
+            
+            // List of characters that can be assassinated (not self)
+<span class="nc" id="L239">            List&lt;String&gt; assassinTargets = java.util.Arrays.asList(&quot;King&quot;, &quot;Warlord&quot;, &quot;Architect&quot;, &quot;Magician&quot;, &quot;Bishop&quot;, &quot;Merchant&quot;, &quot;Thief&quot;);</span>
+<span class="nc" id="L240">            List&lt;String&gt; validAssassinTargets = new ArrayList&lt;&gt;();</span>
+            
+<span class="nc bnc" id="L242" title="All 2 branches missed.">            for (String target : assassinTargets) {</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">                if (!target.equals(&quot;Assassin&quot;)) {</span>
+<span class="nc" id="L244">                    validAssassinTargets.add(target);</span>
+                }
+<span class="nc" id="L246">            }</span>
+            
+<span class="nc bnc" id="L248" title="All 2 branches missed.">            if (isHumanPlayer) {</span>
+                // Human player chooses
+<span class="nc" id="L250">                System.out.println(&quot;Choose a character to assassinate:&quot;);</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">                for (int i = 0; i &lt; validAssassinTargets.size(); i++) {</span>
+<span class="nc" id="L252">                    System.out.println(&quot;[&quot; + i + &quot;] &quot; + validAssassinTargets.get(i));</span>
+                }
+                
+<span class="nc" id="L255">                java.util.Scanner scanner = new java.util.Scanner(System.in);</span>
+<span class="nc" id="L256">                int choice = -1;</span>
+<span class="nc bnc" id="L257" title="All 4 branches missed.">                while (choice &lt; 0 || choice &gt;= validAssassinTargets.size()) {</span>
+                    try {
+<span class="nc" id="L259">                        System.out.print(&quot;Enter choice: &quot;);</span>
+<span class="nc" id="L260">                        choice = Integer.parseInt(scanner.nextLine().trim());</span>
+<span class="nc bnc" id="L261" title="All 4 branches missed.">                        if (choice &lt; 0 || choice &gt;= validAssassinTargets.size()) {</span>
+<span class="nc" id="L262">                            System.out.println(&quot;Invalid selection. Try again:&quot;);</span>
+                        }
+<span class="nc" id="L264">                    } catch (NumberFormatException e) {</span>
+<span class="nc" id="L265">                        System.out.println(&quot;Invalid input. Enter a number.&quot;);</span>
+<span class="nc" id="L266">                    }</span>
+                }
+                
+<span class="nc" id="L269">                String chosen = validAssassinTargets.get(choice);</span>
+<span class="nc" id="L270">                System.out.println(player.getName() + &quot; assassinates the &quot; + chosen + &quot;. They will skip their turn.&quot;);</span>
+                
+                // Mark the chosen character as assassinated (you'll need to implement this logic in your turn system)
+<span class="nc" id="L273">                markCharacterAsAssassinated(chosen, players);</span>
+                
+<span class="nc" id="L275">            } else {</span>
+                // Computer chooses randomly
+<span class="nc" id="L277">                String chosen = validAssassinTargets.get(new java.util.Random().nextInt(validAssassinTargets.size()));</span>
+<span class="nc" id="L278">                System.out.println(player.getName() + &quot; assassinates the &quot; + chosen + &quot;. They will skip their turn.&quot;);</span>
+                
+                // Mark the chosen character as assassinated
+<span class="nc" id="L281">                markCharacterAsAssassinated(chosen, players);</span>
+            }
+<span class="nc" id="L283">            break;</span>
+            
+        default:
+<span class="nc" id="L286">            System.out.println(&quot;No action for &quot; + role);</span>
+    }
+<span class="nc" id="L288">}</span>
+
+// Helper method to mark a character as assassinated
+private void markCharacterAsAssassinated(String characterName, java.util.List&lt;Player&gt; players) {
+<span class="nc bnc" id="L292" title="All 2 branches missed.">    for (Player p : players) {</span>
+<span class="nc bnc" id="L293" title="All 4 branches missed.">        if (p.getCharacter() != null &amp;&amp; p.getCharacter().getName().equals(characterName)) {</span>
+            // You'll need to add a method to mark players as assassinated
+            // For now, we'll just print a message
+<span class="nc" id="L296">            System.out.println(&quot;The &quot; + characterName + &quot; (&quot; + p.getName() + &quot;) has been assassinated and will skip their turn.&quot;);</span>
+<span class="nc" id="L297">            break;</span>
+        }
+<span class="nc" id="L299">    }</span>
+<span class="nc" id="L300">}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
