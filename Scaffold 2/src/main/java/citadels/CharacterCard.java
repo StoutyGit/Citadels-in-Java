@@ -13,6 +13,19 @@ public class CharacterCard extends Card{
         this.ability = ability;
     }
 
+    public static List<CharacterCard> getCharacters() {
+    List<CharacterCard> characters = new ArrayList<>();
+    characters.add(new CharacterCard("Assassin", 1, "Kill a character."));
+    characters.add(new CharacterCard("Thief", 2, "Steal gold from a character."));
+    characters.add(new CharacterCard("Magician", 3, "Swap hand or redraw."));
+    characters.add(new CharacterCard("King", 4, "Gain gold for yellow, get crown."));
+    characters.add(new CharacterCard("Bishop", 5, "Gain gold for blue, immune to Warlord."));
+    characters.add(new CharacterCard("Merchant", 6, "Gain gold for green, +1 gold."));
+    characters.add(new CharacterCard("Architect", 7, "Draw 2 extra cards, build up to 3."));
+    characters.add(new CharacterCard("Warlord", 8, "Gain gold for red, destroy buildings."));
+    return characters;
+}
+
     public int getTurnOrder() {
         return turnOrder;
     }

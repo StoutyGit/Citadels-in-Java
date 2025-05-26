@@ -8,6 +8,9 @@ import java.util.*;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.*;
+import org.json.simple.parser.*;
+
 
 public class App {
 	
@@ -239,69 +242,81 @@ public class App {
     }
 
     private void playerTurn(Player player) {
-    System.out.println("Collect 2 gold or draw two cards and pick one [gold/cards]:");
-    String inputChoice = "";
-
-    while (true) {
-        System.out.print("> ");
-        inputChoice = input.nextLine().trim().toLowerCase();
-        if (inputChoice.equals("gold")) {
-            player.addGold(2);
-            System.out.println("You received 2 gold.");
-            break;
-        } else if (inputChoice.equals("cards")) {
-            DistrictCard card1 = deck.draw();
-            DistrictCard card2 = deck.draw();
-            
-            if (card1 == null && card2 == null) {
-                System.out.println("The deck is empty. You receive 2 gold instead.");
-                player.addGold(2);
+        //Passive Abilities
+        String role = player.getCharacter().getName();
+        switch(role){
+            case "Assassin":
+                player.getCharacter().useAbility(player, deck, players);
+                UserCommands.abilityCount += 1;
                 break;
-            }
+            
+        }
+        System.out.println("Collect 2 gold or draw two cards and pick one [gold/cards]:");
+        String inputChoice = "";
 
-            if (card1 != null && card2 != null) {
-                System.out.println("Choose a card to keep: [a] " + card1.getName() + " or [b] " + card2.getName());
-                String choice = "";
-                while (true) {
-                    choice = input.nextLine().trim().toLowerCase();
-                    if (choice.equals("a")) {
-                        player.drawCard(card1);
-                        break;
-                    } else if (choice.equals("b")) {
-                        player.drawCard(card2);
-                        break;
-                    } else {
-                        System.out.println("Invalid choice. Please enter 'a' or 'b'.");
-                    }
+        while (true) {
+            System.out.print("> ");
+            inputChoice = input.nextLine().trim().toLowerCase();
+            if (inputChoice.equals("gold")) {
+                player.addGold(2);
+                System.out.println("You received 2 gold.");
+                break;
+            } else if (inputChoice.equals("cards")) {
+                DistrictCard card1 = deck.draw();
+                DistrictCard card2 = deck.draw();
+                
+                if (card1 == null && card2 == null) {
+                    System.out.println("The deck is empty. You receive 2 gold instead.");
+                    player.addGold(2);
+                    break;
                 }
+
+                if (card1 != null && card2 != null) {
+                    System.out.println("Choose a card to keep: [a] " + card1.getName() + " [" + card1.getColor() + "] " + "[" + card1.getCost()
+                    + "]" + " or [b] " + card2.getName() + " [" + card2.getColor() + "] " + "[" + card2.getCost() + "]");
+                    String choice = "";
+                    while (true) {
+                        choice = input.nextLine().trim().toLowerCase();
+                        if (choice.equals("a")) {
+                            player.drawCard(card1);
+                            System.out.println("You chose " +  card1.getName());
+                            break;
+                        } else if (choice.equals("b")) {
+                            player.drawCard(card2);
+                            System.out.println("You chose " + card2.getName());
+                            break;
+                        } else {
+                            System.out.println("Invalid choice. Please enter 'a' or 'b'.");
+                        }
+                    }
+                } else {
+                    // Only one card is available
+                    DistrictCard onlyCard = (card1 != null) ? card1 : card2;
+                    System.out.println("Only one card available. You automatically receive: " + onlyCard.getName());
+                    player.drawCard(onlyCard);
+                }
+
+                break;
             } else {
-                // Only one card is available
-                DistrictCard onlyCard = (card1 != null) ? card1 : card2;
-                System.out.println("Only one card available. You automatically receive: " + onlyCard.getName());
-                player.drawCard(onlyCard);
+                System.out.println("Invalid choice. Please type [gold/cards]:");
             }
+        }
 
-            break;
-        } else {
-            System.out.println("Invalid choice. Please type [gold/cards]:");
+        UserCommands commandProcessor = new UserCommands(deck, characterDeck, this);
+
+        while (true) {
+            System.out.print("> ");
+            String[] command = input.nextLine().trim().toLowerCase().split(" ");
+            if (command.length > 0 && command[0].equals("end")) {
+                System.out.println("You ended your turn.");
+                crownedPlayerIndex = (crownedPlayerIndex + 1) % players.size();
+                updateCrownAfterRound();
+                return;
+            }
+            commandProcessor.process(player, command, players);
+            System.out.println();
         }
     }
-
-    UserCommands commandProcessor = new UserCommands(deck);
-
-    while (true) {
-        System.out.print("> ");
-        String[] command = input.nextLine().trim().toLowerCase().split(" ");
-        if (command.length > 0 && command[0].equals("end")) {
-            System.out.println("You ended your turn.");
-            crownedPlayerIndex = (crownedPlayerIndex + 1) % players.size();
-            updateCrownAfterRound();
-            return;
-        }
-        commandProcessor.process(player, command, players);
-        System.out.println();
-    }
-}
 
     private boolean checkGameEnd(){
         for(Player player : players){
@@ -312,35 +327,108 @@ public class App {
         return false;
     }
 
-    private void gameEnd(){
-        System.out.println("Game over! Final scores:");
+    private void gameEnd() {
+    System.out.println("Game over! Final scores:");
 
-        int highestScore = -1;
-        Player winner = null;
+    int highestScore = -1;
+    Player winner = null;
+    int highestRank = -1;
 
-        for (Player player : players) {
-            int score = 0;
-            List<DistrictCard> city = player.getBuiltDistricts();
-            for (int i = 0; i < city.size(); i++) {
-                score += city.get(i).getCost();
-            }
-
-            String characterName = "";
-            if (player.getCharacter() != null) {
-                characterName = player.getCharacter().getName();
-            }
-            System.out.println(player.getName() + characterName + " scored " + score + " points.");
-
-            if (score > highestScore) {
-                highestScore = score;
-                winner = player;
-            }
-        }
-
-        if (winner != null) {
-            System.out.println("The winner is: " + winner.getName() + " with " + highestScore + " points!");
+    // Determine first to finish
+    Player firstToFinish = null;
+    for (Player player : players) {
+        if (player.getBuiltDistricts().size() >= 8) {
+            firstToFinish = player;
+            break;
         }
     }
+
+    for (Player player : players) {
+        boolean isFirstToFinish = (player == firstToFinish);
+        int score = calculateScore(players, player, isFirstToFinish);
+
+        String characterName = "";
+        int rank = -1;
+        if (player.getCharacter() != null) {
+            characterName = " - " + player.getCharacter().getName();
+            rank = player.getCharacter().getTurnOrder();
+        }
+
+        System.out.println(player.getName() + characterName + " scored " + score + " points.");
+
+        if (score > highestScore || (score == highestScore && rank > highestRank)) {
+            highestScore = score;
+            highestRank = rank;
+            winner = player;
+        }
+    }
+
+    if (winner != null) {
+        System.out.println("The winner is: " + winner.getName() + " with " + highestScore + " points!");
+    }
+}
+
+    public int calculateScore(List<Player> players, Player player, boolean isFirstToFinish) {
+    int score = 0;
+
+    // 1. Base score = sum of building costs
+    for (DistrictCard card : player.getBuiltDistricts()) {
+        score += card.getCost();
+    }
+
+    // 2. Bonus for having all district types
+    Set<String> colors = new HashSet<>();
+    for (DistrictCard card : player.getBuiltDistricts()) {
+        colors.add(card.getColor().toLowerCase());
+    }
+    if (colors.contains("red") && colors.contains("blue") && colors.contains("green") && colors.contains("yellow") && colors.contains("purple")) {
+        score += 3;
+    }
+
+    // 3. Bonus for city completion
+    if (player.getBuiltDistricts().size() >= 8) {
+        if (isFirstToFinish) {
+            score += 4;
+        } else {
+            score += 2;
+        }
+    }
+
+    // 4. Extra points from special purple districts
+    for (DistrictCard card : player.getBuiltDistricts()) {
+        String name = card.getName();
+        if (name.equals("University") || name.equals("Dragon Gate")) {
+            score += 2; // each worth 8 points but base is 6 → +2
+        } else if (name.equals("Museum")) {
+            // Placeholder: assume 1 card under Museum = 1 point
+            score += 1;
+        } else if (name.equals("Imperial Treasury")) {
+            score += player.getGold();
+        } else if (name.equals("Map Room")) {
+            score += player.getHand().size();
+        } else if (name.equals("Wishing Well")) {
+            int purpleCount = 0;
+            for (DistrictCard d : player.getBuiltDistricts()) {
+                if (!d.getName().equals(name) && d.getColor().equalsIgnoreCase("purple")) {
+                    purpleCount++;
+                }
+            }
+            score += purpleCount;
+        } else if (name.equals("Poor House")) {
+            if (player.getGold() == 0) {
+                score += 1;
+            }
+        } else if (name.equals("Park")) {
+            if (player.getHand().size() == 0) {
+                score += 2;
+            }
+        }
+    }
+
+    return score;
+}
+
+
 
     private void initializeCharacters() {
         characterDeck.add(new CharacterCard("Assassin", 1, "Kill a character"));
@@ -401,108 +489,7 @@ public class App {
             }
         }
     }
-
-    private void showHand(Player player) {
-    System.out.println("Your hand:");
-    List<DistrictCard> hand = player.getHand();
-    for (int i = 0; i < hand.size(); i++) {
-        DistrictCard card = hand.get(i);
-        System.out.println("[" + i + "] '" + card.getName() + "' [" + card.getColor() + "] [" + card.getCost() + "]");
-    }
-    System.out.println("Gold: " + player.getGold());
-}
-
-    private void showGold(String command) {
-        Player player;
-        if (command.length() > 0) {
-            try {
-                int index = Integer.parseInt(command) - 1;
-                player = players.get(index);
-            } catch (Exception e) {
-                System.out.println("Invalid player number");
-                return;
-            }
-        } else {
-            player = players.get(crownedPlayerIndex);
-        }
-        System.out.println(player.getName() + " has " + player.getGold() + " gold.");
-    }
-
-    private void buildDistrict(Player player, String command) {
-        if (command.length() < 1) {
-        System.out.println("Usage: build <card index>");
-        return;
-    }
-
-    try {
-        int index = Integer.parseInt(command);
-        List<DistrictCard> hand = player.getHand();
-
-        if (index < 0 || index >= hand.size()) {
-            System.out.println("Invalid card index.");
-            return;
-        }
-
-        DistrictCard card = hand.get(index);
-
-        if (player.hasBuilt(card.getName())) {
-            System.out.println("You already built a district with that name.");
-            return;
-        }
-
-        if (player.getGold() < card.getCost()) {
-            System.out.println("Not enough gold to build " + card.getName());
-            return;
-        }
-
-        player.buildDistrict(card);
-        System.out.println("Built: " + card.getName() + " [" + card.getColor() + card.getCost() + "]");
-    } catch (NumberFormatException e) {
-        System.out.println("Invalid number format. Use: build <index>");
-    }
-    }
-
-    private void showCity(String command) {
-        Player player;
-        if (command.length() > 0) {
-            try {
-                int index = Integer.parseInt(command) - 1;
-                player = players.get(index);
-            } catch (Exception e) {
-                System.out.println("Invalid player number");
-                return;
-            }
-        } else {
-            player = players.get(crownedPlayerIndex);
-        }
-
-        System.out.println(player.getName() + "'s city:");
-        for (DistrictCard city : player.getBuiltDistricts()) {
-            System.out.println("- " + city.getName() + "[" + city.getColor() + "] " + "[" + city.getCost() + "]");
-        }
-    }
-
-    private void showAll() {
-        for (Player player : players) {
-            System.out.println(player);
-        }
-    }
-
-    private void showHelp() {
-        System.out.println("Available commands:");
-        System.out.println("info : show information about a character or building");
-        System.out.println("t : process turns");
-        System.out.println("");
-        System.out.println("all : shows all current game info");
-        System.out.println("citadel/city/list : shows all districts built by a player");
-        System.out.println("hand : shows card in hand");
-        System.out.println("gold [p] : shows gold of a pleyr");
-        System.out.println("");
-        System.out.println("build <place in hand> : Builds a building into your city");
-        System.out.println("action : Gives info about your special action and how to perform it");
-        System.out.println("end : Ends your turn");
-    }
-
+    
     private void pressedT() {
         while (true) {
             String uInput = input.nextLine().trim();
@@ -515,6 +502,121 @@ public class App {
             
         }
     }
+
+    @SuppressWarnings("unchecked")
+    public void saveGame(String filename) {
+    JSONObject root = new JSONObject();
+
+    // Save each player
+    JSONArray playerArray = new JSONArray();
+    for (Player p : players) {
+        JSONObject obj = new JSONObject();
+        obj.put("name", p.getName());
+        obj.put("gold", p.getGold());
+        obj.put("character", p.getCharacter() != null ? p.getCharacter().getName() : null);
+
+        JSONArray hand = new JSONArray();
+        for (DistrictCard c : p.getHand()) {
+            JSONObject card = new JSONObject();
+            card.put("name", c.getName());
+            card.put("color", c.getColor());
+            card.put("cost", c.getCost());
+            card.put("text", c.getDescription());
+            hand.add(card);
+        }
+
+        JSONArray built = new JSONArray();
+        for (DistrictCard c : p.getBuiltDistricts()) {
+            JSONObject card = new JSONObject();
+            card.put("name", c.getName());
+            card.put("color", c.getColor());
+            card.put("cost", c.getCost());
+            card.put("text", c.getDescription());
+            built.add(card);
+        }
+
+        obj.put("hand", hand);
+        obj.put("builtDistricts", built);
+        playerArray.add(obj);
+    }
+
+    root.put("players", playerArray);
+    root.put("crownedPlayerIndex", crownedPlayerIndex);
+
+    try (FileWriter fw = new FileWriter(filename)) {
+        fw.write(root.toJSONString());
+        System.out.println("Game saved to " + filename);
+    } catch (IOException e) {
+        System.err.println("Error saving game: " + e.getMessage());
+    }
+}
+
+public void loadGame(String filename) {
+    try {
+        JSONParser parser = new JSONParser();
+        JSONObject root = (JSONObject) parser.parse(new FileReader(filename));
+
+        players.clear();
+
+        JSONArray playerArray = (JSONArray) root.get("players");
+        for (Object o : playerArray) {
+            JSONObject obj = (JSONObject) o;
+            Player p = new Player((String) obj.get("name"));
+            p.addGold(((Long) obj.get("gold")).intValue() - 2); // Start from 2 gold
+
+            String characterName = (String) obj.get("character");
+            if (characterName != null) {
+                for (CharacterCard c : CharacterCard.getCharacters()) {
+                    if (c.getName().equals(characterName)) {
+                        p.assignCharacter(c);
+                        break;
+                    }
+                }
+            }
+
+            JSONArray hand = (JSONArray) obj.get("hand");
+            for (Object hc : hand) {
+                JSONObject card = (JSONObject) hc;
+                p.drawCard(new DistrictCard(
+                    (String) card.get("name"),
+                    (String) card.get("color"),
+                    ((Long) card.get("cost")).intValue(),
+                    (String) card.get("description")
+                ));
+            }
+
+            JSONArray built = (JSONArray) obj.get("builtDistricts");
+            for (Object bc : built) {
+                JSONObject card = (JSONObject) bc;
+                p.getBuiltDistricts().add(new DistrictCard(
+                    (String) card.get("name"),
+                    (String) card.get("color"),
+                    ((Long) card.get("cost")).intValue(),
+                    (String) card.get("description")
+                ));
+            }
+
+            players.add(p);
+        }
+
+        crownedPlayerIndex = ((Long) root.get("crownedPlayerIndex")).intValue();
+
+        System.out.println("Game loaded from " + filename);
+        resumeGame();
+    } catch (Exception e) {
+        System.err.println("Failed to load game: " + e.getMessage());
+    }
+}
+
+public void resumeGame() {
+    System.out.println("Game loaded. Resuming...");
+    System.out.println("You are player 1");
+    System.out.println(players.get(crownedPlayerIndex).getName() + " is the crowned player and goes first.");
+    System.out.println("Press t to process turns");
+    while (!gameOver) {
+        gameLoop();
+    }
+}
 
     public static void main(String[] args) {
         App app = new App();

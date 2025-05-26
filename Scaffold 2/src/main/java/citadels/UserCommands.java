@@ -4,17 +4,21 @@ import java.util.*;
 
 public class UserCommands {
     private Deck deck;
-    private int abilityCount = 0;
+    private List<CharacterCard> characterDeck;
+    private App app;
+    public static int abilityCount = 0;
 
-    public UserCommands(Deck deck) {
+    public UserCommands(Deck deck, List<CharacterCard> characterDeck, App app) {
         this.deck = deck;
+        this.characterDeck = characterDeck;
+        this.app = app;
     }
 
     public void process(Player player, String[] input, List<Player> players) {
-        String command = input[0];
-        String arg = input.length > 1 ? input[1] : "";
-        System.out.println("");
-        switch (command) {
+    String command = input[0];
+    String arg = input.length > 1 ? input[1] : "";
+    System.out.println("");
+    switch (command) {
         case "hand":
             showHand(player);
             break;
@@ -33,6 +37,10 @@ public class UserCommands {
             showCity(arg, players);
             break;
 
+        case "info":
+            showInfo(player, arg);
+            break;
+
         case "all":
             showAll(players);
             break;
@@ -46,20 +54,35 @@ public class UserCommands {
             break;
 
         case "action":
-            if(abilityCount == 0){
-            player.getCharacter().useAbility(player, deck, players);
-            abilityCount += 1;
-            }
-            else{
+            if (abilityCount == 0) {
+                player.getCharacter().useAbility(player, deck, players);
+                abilityCount += 1;
+            } else {
                 System.out.println("Unable to use ability twice in one round");
+            }
+            break;
+
+        case "save":
+            if (!arg.isEmpty()) {
+                app.saveGame(arg);
+            } else {
+                System.out.println("Usage: save <filename>");
+            }
+            break;
+
+        case "load":
+            if (!arg.isEmpty()) {
+                app.loadGame(arg);
+            } else {
+                System.out.println("Usage: load <filename>");
             }
             break;
 
         default:
             System.out.println("Unknown command. Type 'help' to see available actions");
             break;
-        }
     }
+}
 
     private void showHand(Player player) {
         System.out.println("Your hand:");
@@ -107,11 +130,11 @@ public class UserCommands {
                 System.out.println("Invalid input. Please enter a player number");
                 return;
             }
-            System.out.println(targetPlayer.getName() + "'s city:");
+        }
+        System.out.println(targetPlayer.getName() + "'s city:");
             for (DistrictCard card : targetPlayer.getBuiltDistricts()) {
                 System.out.println(card.getName() + " [" + card.getColor() + "] [" + card.getCost() + "]");
             }
-        }
     }
 
     private void buildDistrict(Player player, String arg) {
@@ -143,7 +166,40 @@ public class UserCommands {
         }
     }
 
-    
+    private void showInfo(Player player, String command) {
+        if (command.equals("")) {
+            System.out.println("Usage: info <card number in hand> OR info <character name>");
+            return;
+        }
+
+        // Try to parse as index (for purple district info)
+        try {
+            int index = Integer.parseInt(command);
+            List<DistrictCard> hand = player.getHand();
+            if (index >= 0 && index < hand.size()) {
+                DistrictCard card = hand.get(index);
+                if (card.getColor().equalsIgnoreCase("purple")) {
+                    System.out.println("Purple district info: " + card.getName());
+                    System.out.println("Ability: " + card.getDescription());
+                } else {
+                    System.out.println("This is not a purple (special) district.");
+                }
+            } else {
+                System.out.println("Invalid index. Use 'hand' to see your cards and their indexes.");
+            }
+        } catch (NumberFormatException e) {
+            // Check if matches a character name
+            for (CharacterCard card : CharacterCard.getCharacters()) {
+                if (card.getName().toLowerCase().equals(command)) {
+                    System.out.println("Character: " + card.getName());
+                    System.out.println("Ability: " + card.getAbility());
+                    return;
+                }
+            }
+            System.out.println("Character not found. Check the name and try again.");
+        }
+    }
+
 
     private void showAll(List<Player> players) {
     for (int i = 0; i < players.size(); i++) {
@@ -180,7 +236,7 @@ public class UserCommands {
         System.out.println("t: Processes turns");
         System.out.println("");
         System.out.println("all : Show all player info");
-        System.out.println("citadel/list/city : Show districts built by a player");
+        System.out.println("citadel/list/city [p]: Show districts built by a player");
         System.out.println("hand : Shows cards in hand");
         System.out.println("gold[p] : Shows gold of a player");
         System.out.println("");
